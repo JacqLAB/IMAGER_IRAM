@@ -1,0 +1,379 @@
+\section{Self calibration}
+
+\subsection{In a nutshell}
+
+\begin{verbatim}
+  1  read uv YourData
+  2  selfcal phase
+  3  selfcal summary
+  4  selfcal show
+  5  selfcal apply
+  6  uv_map
+  7  clean
+  6  write * YourSelf 
+\end{verbatim}
+\begin{enumerate}\itemsep 0pt
+\item Read your \uv{} data
+\item Self-calibrate the phase
+\item Get a summary of the result
+\item Show the phase correction between the last 2 iterations
+\item Apply the self-calibration
+\item Image as usual
+\item Clean as usual
+\item Save the result if it is worthwhile...
+\end{enumerate}
+You are done. But, now, if the result is crazy, do not blame the
+software. Rather read carefully the information below: \com{SELFCAL}
+is simple to use, but there are some pitfalls... 
+
+
+\subsection{Principle}
+
+The self-calibration idea is based on the fact that the dominant error terms
+are antenna-based, while source information is baseline-based. 
+With $N$ antennas, one gets at any time $N (N-1) /2$ visibility measurements, 
+but $N$ amplitude gains, and only $N-1$ error terms for the morphology of the source (phase gains). 
+The $N-1$ number is because only relative phases count. The absolute flux
+scale is a separate problem, and therefore also $N-1$ relative amplitude gains count.
+
+The measured visibilities 
+on baselines from antenna $i$ to antenna $j$ at time $t$ are, 
+from the simplified measurement equation:
+\begin{equation}
+    V_{\rm obs}(i,j,t) = G(i,t) G^{{\star}}(j,t)  V_{\rm true}(i,j) + Noise
+\end{equation}    
+where $G(i,t)$ is the complex (phase and amplitude) gain for the 
+antenna $i$ at time $t$. The true visibility $V_{\rm true}(i,j)$ only 
+depends on the baseline $(i,j)$, not on the time.
+  
+Given a source model $V_{mod}(i,j)$, one can derive the antenna gain
+products at time $t$, based on the system:
+ \begin{equation}
+  \frac{V_{\rm obs}(i,j,t)}{V_{\rm mod}(i,j)} = G(i,t) G^{{\star}}(j,t) 
+  \end{equation}
+which is an over-constrained process, since there are $N(N-1)/2$ 
+constraints for $N-1$ unknowns. Solving for this over-constrained 
+problem is similar to deriving the amplitude and phase solution from a 
+calibrator observation. In the calibrator case (i.e., an unresolved 
+source like a distant bright quasar), $V_{\rm mod(i,j)} = (1.0,0.0)$ 
+(constant amplitude, zero phase), so there is no risk of noise 
+amplification in the process. 
+%The antenna gain corrections are determined 
+%by minimizing the distance between the observed data and the ''model'':
+%\begin{equation}
+%    S_{k} = \Sigma_{i,j} w_{i,j} \| V_{\rm obs}(i,j,tk) - G(i,tk) G^{{\star}}(j,tk)  V_{\rm true}(i,j)\|^{2}
+%\end{equation}
+
+For any (not a point-like) source, $V_{\rm mod}$ must be guessed. 
+Self-calibration will use your source to improve the calibration of the 
+antenna-based (complex) gains as a function of time. The practice is to 
+proceed iteratively, based on a preliminary deconvolution solution. Let 
+$V_{\rm obs}(k)$ be the ``observed'' visibilities at iteration $k$, with 
+$V_{\rm obs(k=0)} = V_{\rm obs} $ the raw calibrated visibilities. Some 
+of the Clean components derived from $V_{obs}(k)$ are used to define 
+''model' visibilities $V_{\rm mod}(k)$. Then, solving for the antenna 
+gains, one obtains: 
+
+\begin{equation}
+V_{\rm obs}(k+1) = \frac {V_{obs}(k)}{(G_i G^{{\star}}_j)}
+\end{equation}
+
+The model is thus progressively refined, and in the end, satisfies 
+better the initial constraints on the source shape and on the antenna 
+gains as a function of time provided by the measurements. Note that the 
+absolute phase (and hence the position) can be lost in the 
+self-calibration process and it should not be used for absolute 
+astrometry.
+
+There are two types of self-calibration: phase and amplitude self-calibration. 
+The amplitude gain is a more complex problem than the phase gain.
+Amplitude gains can (and often do) vary with time, but from the
+measurement equation, a scale factor in the amplitude gain can be
+exchanged by a scale factor on the source flux. It is thus customary
+to re-normalize the gains so that the source flux is conserved
+in the process. An alternate (perhaps not strictly equivalent) solution 
+is to ensure that the time averaged product of the amplitude gains is 1.
+The two approaches differ by the averaging process.
+
+For any typical source, $V_{\rm mod}$ is non zero and of magnitude 
+smaller than 1 (using the total flux as a scale factor) since the 
+source is partially resolved. So in computing $V_{obs}/V_{\rm mod}$, 
+there is noise amplification. It may even be the case that $V_{mod}$ is 
+zero (case of an extended, over-resolved emission), and thus some 
+(long) baselines will yield no direct constraint on the antenna gains 
+$G(i) G^{{\star}}(j)$. But this should not matter too much for 
+self-calibration, for two reasons. First, other (i.e., shorter) 
+baselines may provide contraints on the gains. Second, if all 
+$V_{\rm obs}$ for an antenna are
+close to zero, it implies $V_{\rm mod}$ must be close to zero too, 
+so an error on the phase of those visibilities (as well as on
+its magnitude) is not so important. 
+
+Self-calibration is related to the ``closure'' relations. For any triplet 
+of antennas, the phase of the triple product $V_{ij} V_{jk} V_{ki}$ is 
+independent of the antenna errors, and thus is (within the noise) a 
+bias free constraint on the source. Similarly, for any quadruplet of 
+antennas, the amplitude of the ratio $(V_{ij} V_{kl}) / (V_{ik} 
+V_{jl})$  is independent of the antenna errors. But here, the noise 
+amplification can be large because of the likelihood to have two small 
+visibilities. For this reason, amplitude self-calibration requires in 
+practice higher signal to noise ratios than phase calibration in the 
+initial deconvolved data set used as a model. 
+%EDF: Typical numbers here ?, 
+
+Among the advantages of self-calibration, one may emphasize that 
+antenna gains are derived at the correct time of the science object 
+observation, while they must be interpolated in the classical 
+calibration approach. Both atmospheric and electronic noises are 
+supposed to vary with time, although with different timescales. Gains 
+are also computed in the correct direction on the celestial sphere, 
+while the calibrator-based approach introduces differences in the 
+pointing direction with respect to the science object. The robustness 
+of the approach increases with the number of baselines. 
+
+In order to implement self-calibration, it is however necessary that 
+the signal to noise ratio be large enough (the process will require a 
+sufficient bright source). Self-calibration can especially bring 
+significant improvements to the calibration solution in the case of 
+higher than expected background noise, or in the presence of 
+convolutional artifacts around objects, especially point sources.
+
+\subsection{Implementation}
+
+The typical procedure for self-calibration consists in an iterative 
+process based on the following steps:
+\begin{enumerate}\itemsep 0pt
+\item \comm{UV\_MAP}{/SELF} $+$ \com{CLEAN} $+$ 
+\comm{UV\_RESTORE}{/SELF}: from the classically calibrated (and 
+preliminarily flagged) data, define an initial source model through a 
+conservative (not too deep) first deconvolution : the model consists of 
+a reasonably modest number of CLEAN components.
+\item \com{SOLVE}: determine an estimate of the antenna gains (best fit 
+to the observed visibilities)
+\item \com{APPLY}: apply the derived gains to correct the observed data
+\item \com{STATISTIC}: compare to the initial Image, and estimate the 
+improvement through an adequate quality assessment (e.g., improvement 
+of the dynamic range)
+\item If necessary, re-build a new model from these corrected data, and 
+iterate until the solution is satisfactory.
+\end{enumerate}
+
+Phase-only self-calibration is less stringent on the signal-to-noise 
+ratio (SNR) threshold than amplitude self-calibration, and it should 
+therefore be attempted first. For phase self-calibration to work, the 
+SNR values in the initial data should be at least of $SNR > 3$ per 
+antenna (in a solution interval shorter than the time for significant 
+phase variations for all baselines to a single antenna). The SNR 
+threshold in the initial image depends on the number of antennas and on 
+the adopted time averaging. Depending on the complexity of the source 
+(and the contribution from extended emission), all available baselines 
+may not be considered in the process, and specific preliminary flagging 
+could be necessary. Amplitude errors tend to be negligible for dynamic 
+ranges below about 500. Amplitude self-calibration will thus 
+be eventually attempted in a subsequent step.
+
+Self Calibration is available in \imager{} through the command 
+\com{SELFCAL}, which uses an iterative scheme driven by a script 
+(gag\_pro:p\_selfcal.ima).  From the above principle, the script 
+controls
+  a) the number of iterations
+  b) the number of selected clean components at each iteration
+  c) the time scale of the solution, i.e. the integration time
+  over which the gains are assumed to be constant
+
+The parameters of the command \com{SELFCAL} are available as 
+\sicvar{SELF\_Names} \sic{} variables.  The script uses the commands 
+\com{UV\_MAP}, \com{CLEAN}, and  \com{SOLVE} and \com{APPLY} from the 
+\lang{CALIBRATE} language. By default, a solution is searched for the 
+phase calibration only (\sicvar{SELF\_MODE} $=$ \texttt{PHASE}), and 
+the number of iterations is 3 (\sicvar{SELF\_LOOP}). For each 
+iteration: 
+\begin{itemize}\itemsep 0pt
+\item All components found by \com{CLEAN} are kept by default 
+(\sicvar{SELF\_NITER}$=0$), but for simple source structures, 10 components only 
+may be enough (the maximum number \sicvar{NITER} of  CLEAN components to 
+subtract is automatically guessed by the program in the default 
+process, see \sicvar{CLEAN\_NITER} and other usual clean convergence control 
+variables),
+\item the minimum flux density per pixel to be considered by CLEAN can 
+be defined (SELF\_MINFLUX $=0$) 
+\item The ''integration'' times (gain averaging) are fixed to a default 
+value SELF\_{TIMES}$=45$\,s (minimum value for NOEMA, while it is only 
+6\,s for ALMA). This can be adapted for each loop (in general, one 
+should start with larger solution times, depending on the SNR values 
+and try to decrease it in order to better sample the atmospheric 
+fluctuations). 
+\end{itemize}
+The number of iterations can be changed by resizing the 
+\sicvar{SELF\_TIMES}, \sicvar{SELF\_NITER}, or \sicvar{SELF\_MINFLUX} 
+arrays (the number of loops \sicvar{SELF\_LOOP} is then automatically 
+recomputed). You should make sure that these 3 arrays have the same 
+dimension. If any of the \sicvar{SELF\_NITER} and/or 
+\sicvar{SELF\_MINFLUX} array are constant then their dimension is 
+accordingly changed by \com{SELFCAL} each time one of these arrays is 
+resized. For instance, the following command allows to define 5 loops 
+with an integration time for solution of 45\,sec:
+\begin{verbatim}
+let Self_times 45 45 45 45 45 /resize
+\end{verbatim}
+\sicvar{SELF\_NITER} and \sicvar{SELF\_MINFLUX} are automatically enlarged
+to the same size if, and only if, they were already constant.
+By default, all channels are averaged to compute a 
+''continuum'' image, but  the range of adequate channels can be 
+specified through \sicvar{SELF\_CHANNEL}. 
+
+\comm{SELFCAL}{PHASE} will compute a phase calibration, but will not 
+apply it. One needs to call \com{SELFCAL} once more with the argument 
+APPLY in order to apply the solution (the script does really apply the 
+solution if and only if the previously found solution can be considered 
+as a good one (see SELF\_{STATUS} argument value). 
+
+\comm{SELFCAL}{APPLY} automatically saves the parameters and results in 
+the \textit{selfcal.last} file. By default, data are flagged if no 
+sufficiently good solution is found. \comm{SELFCAL}{APPLY} keep tracks 
+of whether the solution has already been applied through 
+\sicvar{SELF\_APPLIED}. \comm{SELFCAL}{APPLY} will refuse to apply 
+``bad'' solutions: solutions are declared ``bad'' if the improvement in 
+dynamic range and noise level is insufficient (i.e. below a precision 
+level controlled by \sicvar{SELF\_PRECISION}). In this case, the 
+\sicvar{SELF\_STATUS} variable is negative. In this case, the user can 
+still decide to apply the solution directly using command \com{APPLY}, 
+but the \sicvar{SELF\_APPLIED} variable will not be updated.
+
+The merit criteria for the quality assessment of the computed solution 
+are the final dynamic range, and the Clean map noise at each iteration. 
+These quantities are stored in the \sicvar{SELF\_DYNAMIC} and 
+\sicvar{SELF\_RMSCLEAN} variables (at each iteration). The dynamic is 
+defined as the ratio of the peak flux density value to the noise in the 
+clean map (automatically estimated with the command \com{STATISTIC}). 
+The  minimum signal to noise ratio value (for an antenna) for a valid 
+solution is \sicvar{SELF\_SNR}$=6$ by default. 
+
+\com{SELFCAL} can be controlled through a widget, using
+command \comm{SELFCAL}{/WIDGET} (see Figure \ref{fig:selfcal}) 
+\begin{figure}
+  \centering
+  \includegraphics[width=10cm]{selfcal-widget.png}
+  \caption{The Self-Calibration widget
+\label{fig:selfcal}}
+\end{figure}
+
+
+It is possible to visualize the computed corrections with the command 
+\comm{SELFCAL}{SHOW}. The solution computed with the \com{SOLVE} 
+command is written in a \textit{'self\_sname'.tab} file. By default, 
+the difference between the last two iterations is displayed. For 
+\texttt{PHASE}, the phase difference should be close to zero if the 
+solution converged, and for \texttt{AMPLI} the amplitude values close 
+to 1. It is also possible to show the difference between two specified 
+iterations. In addition, the command \comm{SELFCAL}{SUMMARY} will 
+display the results of the process in terms of resulting noise and 
+improved dynamic range. If the solution is satisfactory, the command 
+\comm{SELFCAL}{SAVE} can be used to save both the results and the 
+parameters in the \textit{selfcal.last} file. (\comm{SELFCAL}{APPLY} 
+performs an implicit \comm{SELFCAL}{SAVE}.)
+
+\subsection{Basic use }
+\subsubsection{Timescale for averaging solution interval}
+
+The solution interval, or timescale used to average the solution for 
+the gain variations, is the result of a tradeoff between the timescale 
+of the true gain variations (e.g., changes in the atmospheric 
+conditions or electronics) and the data averaging which is necessary to 
+reach a minimum SNR value for the visibilities. In principle, this 
+timescale should be smaller than the coherence time
+of the atmospheric fluctuations for the phase solution, typically
+one minute. It is in general longer for the amplitude gains, since here
+these are changes in the atmospheric transparency or antenna gains
+which matter. It is 
+therefore recommended to start iterations with a not too short 
+averaging time, and to decrease it in a second step if the 
+self-calibration was successful. It is also recommended to use the same 
+integration time for the last two iterations, in order to ease the 
+interpretation of the results and of the \comm{SELFCAL}{SHOW} display.
+ 
+The current self-calibration method computes baseline-based
+gains (observed complex visibility divided by model prediction) 
+for each visibility, and performs the time averaging on these
+baseline-based gains. Antenna based gains are derived from
+the time-averaged baseline-based gains.  This is in principle an 
+optimal method, since the model is not noisy: the linearity of the
+first step guarantees a noise decrease as square root of time.
+
+%Boxcar smoothing was used in AIPS in the early VLA times. CASA uses the CLIC engine in a unknown way.
+
+\subsubsection{Quality assessment and data flagging}
+
+\begin{description}\itemsep 0pt
+\item [Validation of the solution] 
+One of the difficulties of self-calibration is to evaluate whether
+it has improved the image or not. The self-calibration 
+solution is biased towards the assumed model. If used with insufficient
+signal to noise, it will tend to produce a point source at the
+initial peak position, and the bias will be of order of the noise.
+This may be inappropriate. 
+Currently, the validity of the self-calibration solution is based on 
+the estimated signal to noise ratio for the gains at each time step. 
+If that SNR is below a user-controlled threshold (by default, \sicvar{SELF\_SNR}$=6$), 
+the corresponding data is flagged (default value: \sicvar{SELF\_FLAG}$=$\texttt{YES}) 
+or kept WITHOUT self calibration (if \sicvar{SELF\_FLAG}=\texttt{NO}). 
+%
+\item [Flagging or not flagging ?] 
+The decision to flag or not results from a trade-off:
+\begin{itemize}\itemsep 0pt
+\item \sicvar{SELF\_FLAG} $=$ \texttt{Yes} : will result in no contamination by bad data, but
+may lead to lower angular resolution since long baselines may be flagged.
+\item \sicvar{SELF\_FLAG} $=$ \texttt{No}: will avoid loosing all long baselines (where the SNR is lower)
+\end{itemize}
+Both options may be explored, and it is recommended to check afterwards the final angular 
+resolution with and without flagging.
+\end{description}
+
+The following scheme is proposed to check the validity of the self-calibration solution:
+\begin{itemize}\itemsep 0pt
+\item read the status using \comm{SELFCAL}{SUMMARY}
+\item use \comm{SELFCAL}{SHOW} to verify if the solution is converged
+\item if it looks good, but noise is still far from theoretical, try 
+again to self-calibrate with a shorter integration time (SELF\_TIMES). 
+\item if it is not good, try to increase \sicvar{SELF\_TIMES} and find an 
+optimum value. For ALMA data, typical values may be in the range 
+$6-60$\,s, and for NOEMA in the range $45-120$\,s. Alternatively, you 
+can also try to decrease \sicvar{SELF\_SNR} to lower values, but never
+less than 3.
+\end{itemize}
+
+From our experience, the number of loops \sicvar{SELF\_NLOOP} does not impact 
+much the quality of the solution, and 2 to 3 iterations are usually 
+sufficient.
+
+%Propositions and discussion:
+%Min/max values should be displayed:  Nyquist sampling time could be automatically calculated 
+%how is the maximum expected dynamic range computed ? (smaller than the one obtained after selfcal ! ;)
+%sometimes Expected rms noise is       NaN microJy/beam (SNR>=4)
+%comment afficher les donnees flagguees (visualiser quelles bases on ete flagguees)
+
+Caveat: the comparison with theoretical noise relies on a proper 
+scaling of the weights of the UV data. This was fine for the previous
+IRAM correlator, but data exported from CASA is not always correct in this respect.
+It also remains to be checked with the PolyFIX NOEMA correlator. 
+\com{UV\_PREVIEW} can warn you about potential issues in this respect. 
+The appropriate scaling factor can be specified by variable \sicvar{SELF\_SNOISE}.
+
+\subsubsection{Advanced use}
+
+\paragraph{Amplitude self calibration}
+The amplitude calibration (\comm{SELFCAL}{AMPLI}) is a secondary step in the self-calibration process.
+In general, it should only be attempted if the phase calibration was 
+already excellent, i.e., once you obtained the best solution by 
+adjusting the \sicvar{SELF\_TIMES} parameter for the 
+\comm{SELFCAL}{PHASE} command. If possible or needed, the amplitude 
+self-calibration should use a \textit{longer timescale} than the phase 
+calibration (typically, \sicvar{SELF\_TIMES}$=120$s). \com{SELFCAL} 
+automatically adjusts the gains so that their mean is 1, in order to 
+avoid changing the flux scale. In practice, it is useless if the expected noise
+limited dynamic range is less than about 300.
+
+\paragraph{Support restriction, flux threshold}
+Support restriction in the \com{CLEAN} process may be useful to build a 
+simpler model for very complex, extended sources only.  Similarly, limiting
+the flux per pixel in the model may help.

@@ -1,0 +1,934 @@
+\subsection{Language}
+\index{Language}
+\begin{verbatim}
+    EXTRACT       : Extract a subset from a data cube
+    MAP_CONTINUUM : Determine the continuum image from a spectral cube
+    MFS           : Multi Frequency Synthesis (under development - not functiona
+    SLICE         : Extract a Slice of the specified data cube
+    UV_DEPROJECT  : Deproject UV data
+    UV_PREVIEW    : Quick look at the spectral aspects of the UV data
+    UV_RADIAL     : Deproject and compute radial average of UV data
+    UV_SHORT      : Compute and add short spacings to UV data
+
+
+\end{verbatim}
+\subsection{EXTRACT}
+\index{EXTRACT}
+\begin{verbatim}
+        [NEWSTUFF\]EXTRACT VarName blc1 blc2 blc3 trc1 trc2 trc3
+
+      Extract the subset VarName[blc1:trc1,blc2:trc2,blc3:trc3] of the image
+    variable VarName and put it in the EXTRACTED image variable.
+
+\end{verbatim}
+\subsection{MAP\_CONTINUUM}
+\index{MAP\_CONTINUUM}
+\begin{verbatim}
+        [NEWSTUFF\]MAP_CONTINUUM [DIRTY|CLEAN [Threshold]]
+
+      Compute a continuum image from the  Dirty  or  Clean  data  set.   The
+    derivation  of  the continuum follows the same algorithm than in UV_CON-
+    TINUUM, using the integrated spectrum over the image.
+
+      To be added: using the Support, and/or the display Size to derive  the
+    integrated spectrum
+
+
+\end{verbatim}
+\subsection{MFS}
+\index{MFS}
+\begin{verbatim}
+        [NEWSTUFF\]MFS
+
+      ** NOT OPERATIONAL -- UNDER DEVELOPMENT **
+
+      Multi-frequency  synthesis,  allowing  to  account  for spectral index
+    changes across the observed field of view for very wide bandwidths  con-
+    tinuum imaging.
+
+\end{verbatim}
+\subsection{SLICE}
+\index{SLICE}
+\begin{verbatim}
+        [NEWSTUFF\]SLICE VarName Start1 Start2 End1 End2 UNIT
+
+      Cut  a slice through the 3-D image variable VarName with the specified
+    edges and put it in the SLICE image variable. UNIT is a keyword indicat-
+    ing  in  which  units the edges are specified. It can be PIXELS, DEGREE,
+    MINUTE, SECOND, RADIAN, of ABSOLUTE.  For ABSOLUTE, Start1 and End1  are
+    assumed  to be in hours and Start2 End2 in degrees, with sexagesimal no-
+    tation allowed.
+
+
+\end{verbatim}
+\subsection{SELFCAL}
+\index{SELFCAL}
+\begin{verbatim}
+
+            SELFCAL [?|AMPLI|APPLY|PHASE|SUMMARY|SHOW [Last [First]]  [/WID-
+    GET]
+
+      Command to perform Self Calibration (even on spectral line data).  The
+    solution is computed, saved and/or applied.
+
+      The arguments control the action.
+
+        SELFCAL ?        Lists the self calibration parameters
+        SELFCAL AMPLI    Compute an Amplitude only self calibration
+        SELFCAL APPLY    Apply the computed solution
+        SELFCAL PHASE    Compute a Phase only self calibration
+        SELFCAL SHOW []  Show the computed corrections
+        SELFCAL SUMMARY  Display the improvements in Noise & Dynamic range
+                         and calibration status
+\end{verbatim}
+\subsubsection{SELFCAL /WIDGET}
+\index{SELFCAL!/WIDGET}
+\begin{verbatim}
+            SELFCAL /WIDGET
+
+    Activates the widget interface to  perform  self  calibration  (even  on
+    spectral  line  data  set).  A  continuum data set is extracted from the
+    specified channel range, with all selected channels averaged to  provide
+    improved sensitivity to find a solution.
+
+      The buttons control the action.
+         AMPLI    Perform an Amplitude only self calibration
+         PHASE    Perform a Phase only self calibration
+         Continue Continue execution when the script is in Pause
+         APPLY    Apply the solution
+         INPUT    List parameters (as in SELFCAL ?)
+         SAVE     Save the parameters in selfcal.last
+         SHOW     Show the computed corrections
+         SUMMARY  Display the improvements in Noise & Dynamic range
+\end{verbatim}
+\subsubsection{SELFCAL Arguments:}
+\index{SELFCAL!Arguments:}
+\begin{verbatim}
+          The arguments control the action.
+        SELFCAL ?        Lists the self calibration parameters
+        SELFCAL AMPLI    Perform an Amplitude only self calibration
+        SELFCAL APPLY    Apply the solution
+        SELFCAL PHASE    Perform a Phase only self calibration
+        SELFCAL SAVE     Save the parameters in selfcal.last
+        SELFCAL SHOW []  Show the computed corrections
+        SELFCAL SUMMARY  Display the improvements in Noise & Dynamic range
+\end{verbatim}
+\subsubsection{SELFCAL AMPLITUDE}
+\index{SELFCAL!AMPLITUDE}
+\begin{verbatim}
+            SELFCAL AMPLI
+
+    Compute  an  Amplitude  only  self-calibration.  The  integration times,
+    SELF_TIME, should in general be significantly larger than  for  a  Phase
+    only self-calibration.
+
+    SELFCAL  automatically  adjusts  the gains so that their mean is 1.0, to
+    avoid changing the flux scale.
+
+\end{verbatim}
+\subsubsection{SELFCAL APPLY}
+\index{SELFCAL!APPLY}
+\begin{verbatim}
+            SELFCAL APPLY
+
+    Apply the self calibration solution. This is done  only  if  the  return
+    status  from  the  previous computation, SELF_STATUS, is greater than 0.
+    SELFCAL APPLY automatically saves the  parameters  and  results  in  the
+    "selfcal.last" file.
+
+\end{verbatim}
+\subsubsection{SELFCAL INPUT}
+\index{SELFCAL!INPUT}
+\begin{verbatim}
+            SELFCAL INPUT  or SELFCAL ?
+
+    Display SELFCAL control variables
+
+\end{verbatim}
+\subsubsection{SELFCAL PHASE}
+\index{SELFCAL!PHASE}
+\begin{verbatim}
+            SELFCAL PHASE
+
+    Compute  a  Phase-only  self calibration. The integration time should be
+    short enough to correct for atmospheric errors, but large enough to  ob-
+    tain significant signal to noise for most antennas.
+
+\end{verbatim}
+\subsubsection{SELFCAL SAVE}
+\index{SELFCAL!SAVE}
+\begin{verbatim}
+            SELFCAL SAVE
+
+        Save the parameters and results in the "selfcal.last" file.
+
+\end{verbatim}
+\subsubsection{SELFCAL SHOW}
+\index{SELFCAL!SHOW}
+\begin{verbatim}
+            SELFCAL SHOW [Last [First]]
+
+    Shows  the correction computed by self calibration. By default, the dif-
+    ference between the last two iterations is displayed:  phase  should  be
+    around 0, and amplitude around 1 if the solution is converged.
+
+    If Last and First are present, it shows the difference between these two
+    specified iteration. If Last only is present, it shows the total correc-
+    tion between the original data and that iteration.
+
+\end{verbatim}
+\subsubsection{SELFCAL SUMMARY}
+\index{SELFCAL!SUMMARY}
+\begin{verbatim}
+            SELFCAL SUMMARY
+
+    Display  a summary of the Self-calibration process: type of calibration,
+    rms and dynamic range at each  iteration,  as  well  as  the  number  of
+    flagged or uncalibrated visibilities.
+
+\end{verbatim}
+\subsubsection{SELFCAL Results:}
+\index{SELFCAL!Results:}
+\begin{verbatim}
+
+    SELFCAL  returns  results  in  several variables, creates a CGAINS array
+    containing the Gain values, and one file to display the computed correc-
+    tion. The file name is specified by SELF_SNAME.
+
+    The result variables are:
+        SELF_APPLIED
+          Indicates whether the solution has been applied
+        SELF_STATUS
+          Indicates if a solution has been computed
+        SELF_DYNAMIC[Self_Loop+1]
+          The dynamic range at each iteration
+        SELF_RMSCLEAN[Self_Loop+1]
+          The rms noise at each iteration
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_APPLIED}
+\index{SELFCAL!SELF\_APPLIED}
+\begin{verbatim}
+
+    Variable  SELF_APLPLIED  indicates  whether  a solution has been applied
+    (#0) or not (0). The value indicates the type and quality  of  solution,
+    as for SELF_STATUS
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_STATUS}
+\index{SELFCAL!SELF\_STATUS}
+\begin{verbatim}
+
+    Variable SELF_STATUS indicates if a solution has been computed
+          0 no solution
+          +/- 1   Phase solution
+          +/- 2   Gain solution
+        >0 means a good solution, <0 a poor one.
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_DYNAMIC}
+\index{SELFCAL!SELF\_DYNAMIC}
+\begin{verbatim}
+
+    SELF_DYNAMIC  is a variable length array of size Self_Loop+1, containing
+    the dynamic range at each iteration.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_RMSCLEAN}
+\index{SELFCAL!SELF\_RMSCLEAN}
+\begin{verbatim}
+
+    SELF_RMSCLEAN is a variable length array of size Self_Loop+1, containing
+    the Clean map rms noise at each iteration.
+
+\end{verbatim}
+\subsubsection{SELFCAL Variables:}
+\index{SELFCAL!Variables:}
+\begin{verbatim}
+
+    The  SELFCAL  behaviour  can be adjusted through control variables named
+    SELF_... (see EXA SELF_ for a list), in addition to  the  control  vari-
+    ables of UV_MAP (MAP_...) and CLEAN (CLEAN_...)
+
+    The most important variable is SELF_TIMES, a variable length array which
+    controls the integration time at each loop. SELF_NITER and  SELF_MINFLUX
+    also control the number of Clean components and minimum flux retained in
+    each loop.
+
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_CHANNEL}
+\index{SELFCAL!SELF\_CHANNEL}
+\begin{verbatim}
+            SELF_CHANNEL[2]
+
+    First and last channel to define the range to compute the UV  table  for
+    the self-calibration solution. For example, if you have used UV\PLUGC to
+    plug a continuum data into the last channel, this could be  set  to  the
+    number  of  channels. 0 0 means all channels are averaged to compute the
+    "continuum" image.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_LOOP}
+\index{SELFCAL!SELF\_LOOP}
+\begin{verbatim}
+
+    Number of self-iteration loops. It is a ReadOnly variable that is  auto-
+    matically  computed  from  the  size  of  the SELF_TIMES, SELF_NITER and
+    SELF_MINFLUX arrays.  Constant arrays are assumed of arbitrary length in
+    this determination. If all 3 arrays have constant values, SELF_TIMES de-
+    termines the number of loops.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_NITER}
+\index{SELFCAL!SELF\_NITER}
+\begin{verbatim}
+
+    Variable length array specifying the number of Clean components retained
+    for  each  loop  of the self-calibration process.  Default is 0, meaning
+    all Clean components found by CLEAN.
+
+    For simple structures and Phase calibration, 10 may be enough. For  more
+    complex  ones,  be sure to include enough Clean components in the model.
+    More components can be taken at each step, although the better knowledge
+    of phase errors often allows the source to be represented with a smaller
+    number of components after self-calibration than before.  The default is
+    a  reasonably  good  compromise,  although faster convergence may be ob-
+    tained with smaller number of components.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_TIMES}
+\index{SELFCAL!SELF\_TIMES}
+\begin{verbatim}
+
+    Variable length array specifying the integration time (in  seconds)  for
+    each loop of the self-calibration process.
+
+    At  NOEMA,  45  sec is the normal minimum integration time. Depending on
+    Signal to Noise, you may need to have this longer,  e.g.  120  sec.  For
+    several  loops, start with a longer value, and decrease only at the end.
+
+    At ALMA, the minimum integration time is 6 sec. At VLA, this may  be  as
+    small as 1 sec.
+
+    It  is recommended to use the same integration time for the last two it-
+    erations, to simplify the interpretation of the results and of the SELF-
+    CAL SHOW display.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_MINFLUX}
+\index{SELFCAL!SELF\_MINFLUX}
+\begin{verbatim}
+
+    Variable  length  array specifying the minimum flux density (in Jy/beam)
+    to be considered in the Clean image for each loop of  the  self-calibra-
+    tion  process. Note that this is the brightness of a pixel, not the flux
+    of a Clean component.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_REFANT}
+\index{SELFCAL!SELF\_REFANT}
+\begin{verbatim}
+
+    The reference antenna number. If 0, the program will peak the  one  with
+    the shortest average baselines.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_FLUX}
+\index{SELFCAL!SELF\_FLUX}
+\begin{verbatim}
+
+    Maximum  value in the FLUX window. If 0, the FlUX window of Clean is not
+    displayed
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_PRECISION}
+\index{SELFCAL!SELF\_PRECISION}
+\begin{verbatim}
+
+    Tolerance to test for self-calibration convergence. The default is 0.01.
+    SELFCAL  SUMMARY will write a message when no more selfcal iteration im-
+    proves the solution (noise and dynamic range) at this precision level.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_RESTORE}
+\index{SELFCAL!SELF\_RESTORE}
+\begin{verbatim}
+
+    Use UV_SELF /RESTORE after Cleaning. This avoids signal aliasing at  im-
+    age edges, and leads to a better estimate of the noise level.
+
+    It also allows to use smaller images, in practice,
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_DISPLAY}
+\index{SELFCAL!SELF\_DISPLAY}
+\begin{verbatim}
+
+    If YES, display Clean image before each calibration loop, and prompt for
+    user input. If YES, Cleaning at each step will use the number of  itera-
+    tions  specified  by  NITER,  while  if set to NO, Cleaning will stop at
+    SELF_NITER, saving time.
+
+    The dynamic range progress report is accurate only  if  SELF_DISPLAY  is
+    set.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_FLAG}
+\index{SELFCAL!SELF\_FLAG}
+\begin{verbatim}
+
+        If SELF_FLAG is YES, SELFCAL will flag data with no solution. If NO,
+    it will keep the data as it was before.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_SNR}
+\index{SELFCAL!SELF\_SNR}
+\begin{verbatim}
+
+    Minimum Signal to Noise ratio on the antenna gain to consider a solution
+    to  be  valid for an antenna. 6 is a good value, 3 a lower limit. Beware
+    that this SNR makes sense only if the a priori  estimate  of  the  noise
+    from the UV weights is correct: see SELF_SNOISE.
+
+\end{verbatim}
+\subsubsection{SELFCAL SELF\_SNOISE}
+\index{SELFCAL!SELF\_SNOISE}
+\begin{verbatim}
+
+    Noise  scaling  factor.  This should be 1, but some noise estimates need
+    corrections. Continuum data from ALMA often  requires  sqrt(2)  instead,
+    for  example.  Command UV_PREVIEW may help you checking the noise scale.
+
+\end{verbatim}
+\subsubsection{SELFCAL CLEAN\_ARES}
+\index{SELFCAL!CLEAN\_ARES}
+\begin{verbatim}
+
+        Maximum absolute residual to stop Cleaning
+
+\end{verbatim}
+\subsubsection{SELFCAL CLEAN\_FRES}
+\index{SELFCAL!CLEAN\_FRES}
+\begin{verbatim}
+
+        Maximum fractional residual to stop Cleaning
+
+\end{verbatim}
+\subsubsection{SELFCAL CLEAN\_NITER}
+\index{SELFCAL!CLEAN\_NITER}
+\begin{verbatim}
+
+    Maximum number of Clean components. If all of CLEAN_ARES, CLEAN_FRES and
+    CLEAN_NITER  are 0, Clean stops by checking the stability of the cleaned
+    flux over CLEAN_NKEEP iterations. See HELP CLEAN for details.
+
+
+
+\end{verbatim}
+\subsection{UV\_DEPROJECT}
+\index{UV\_DEPROJECT}
+\begin{verbatim}
+        [NEWSTUFF\]UV_DEPROJECT x0 y0 Rota Incli
+
+    Deproject a UV table for inclination and orientation  (Incli,  Rota,  in
+    Degrees)  around  a  specified  center (x0,y0  in Radians).  This can be
+    useful for almost planar or cylindrical objects (e.g.  galaxies, or pro-
+    toplanetary disks)
+
+    The result becomes the current UV table.
+
+\end{verbatim}
+\subsection{UV\_PREVIEW}
+\index{UV\_PREVIEW}
+\begin{verbatim}
+        [NEWSTUFF\]UV_PREVIEW [Ntapers [Threshold [NHist]]]
+
+      A fast previewer to figure out if there is signal and what
+      is its spectral shape.  The command attempts to find out
+      the line free regions and to estimate a continuum image.
+
+      Optional arguments are
+      Ntapers:      number of scale sizes  (default 4)
+      Threshold:    Truncation level in Sigma (default 3.5)
+      Nhist:        Histogram size  (default is variable)
+
+\end{verbatim}
+\subsubsection{UV\_PREVIEW Algorithm}
+\index{UV\_PREVIEW!Algorithm}
+\begin{verbatim}
+
+        UV_PREVIEW  computes  for  Ntapers different tapers the spectrum to-
+    wards the phase center. The taper ranges are determined from the  avail-
+    able baseline lengths and telescope diameter.
+
+    For  each  spectrum,  UV_PREVIEW then attempts to figure out if there is
+    line emission and the line-free channels to define the continuum  level.
+    This  is  based  on  the  histogram of the intensity distribution of all
+    channels. The most likely value and the noise level is derived from this
+    histogram.  An  iterative scheme, blanking out of range (presumably line
+    emission) channels, is used for this to converge towards a Gaussian his-
+    togram, which normally represents the noise distribution around the con-
+    tinuum level.
+
+    As a last step, blanked channels are accumulated in a list of  channels,
+    which  thus contain possible line emission at any of the Ntapers scales.
+
+\end{verbatim}
+\subsubsection{UV\_PREVIEW Limitations}
+\index{UV\_PREVIEW!Limitations}
+\begin{verbatim}
+
+        UV_PREVIEW cannot identify lines if there are two few  channels.  It
+    will  only display the spectra in this case. A minimum of 32 channels is
+    required, but confused spectra may also prevent a proper  line  recogni-
+    tion.
+
+\end{verbatim}
+\subsubsection{UV\_PREVIEW Output}
+\index{UV\_PREVIEW!Output}
+\begin{verbatim}
+
+          UV_PREVIEW  returns  the  list  of  possible line channels through
+    variable PREVIEW%CHANNELS. If no line emission  was  identified  at  any
+    scale, the list is empty and the variable does not exist.
+
+    With this list, the user can compute the continuum image, using commands
+    UV_FILTER /CHANNEL PREVIEW%CHANNELS, then  UV_CONTINUUM  and  the  usual
+    UV_MAP  and  CLEAN. Alternatively, the user can filter out the continuum
+    emission using UV_BASELINE /CHANNEL PREVIEW%CHANNELS.
+
+    UV_PREVIEW also creates two  other  variables,  PREVIEW%EDGES  and  PRE-
+    VIEW%FREQUENCIES  which contains the start and end channels (for %EDGES,
+    resp. frequencies for %FREQUENCIES) of each contiguous range of channels
+    in  PREVIOUS%CHANNELS.  These variables are used for line identification
+    and imaging in the
+      @ preview_lines
+      @ image_lines
+    scripts.
+
+\end{verbatim}
+\subsection{UV\_RADIAL}
+\index{UV\_RADIAL}
+\begin{verbatim}
+        [NEWSTUFF\]UV_RADIAL x0 y0 Rota Incli  [/SAMPLING QSTEP [QMIN QMAX]]
+    [/U_ONLY] [/ZERO [Flux]]
+
+    Compute  a  UV  table containing the radial distribution of the azimutal
+    average of the visibilities after deprojection for inclination and  ori-
+    entation  (Incli, Rota, in Degrees) around a specified center (x0,y0  in
+    Radians).
+
+    The result becomes the current UV table.
+
+    If not specified, x0 y0 Rota and Incli default to 0.
+
+\end{verbatim}
+\subsubsection{UV\_RADIAL /SAMPLING}
+\index{UV\_RADIAL!/SAMPLING}
+\begin{verbatim}
+        [NEWSTUFF\]UV_RADIAL x0 y0 Rota Incli /SAMPLING  QSTEP  [QMIN  QMAX]
+    [/U_ONLY] [/ZERO [Flux]]
+
+    Specify  the  sampling  of the UV distances: Qstep is the step, Qmin and
+    Qmax the min and max. Distances are in meter. If not present,  an  auto-
+    matic  guess is made from the minimum and maximum baselines and the dish
+    diameter.
+
+\end{verbatim}
+\subsubsection{UV\_RADIAL /U\_ONLY}
+\index{UV\_RADIAL!/U\_ONLY}
+\begin{verbatim}
+        [NEWSTUFF\]UV_RADIAL x0 y0 Rota Incli /U_ONLY [/SAMPLING QSTEP [QMIN
+    QMAX]] [/ZERO [Flux]]
+
+    Indicate  that  the resulting UV table should have all V values equal to
+    zero. This is convenient to display the azimutal average of the visibil-
+    ities as a function of UV distance, but cannot be used for further imag-
+    ing.
+
+    If not present, the resulting UV table has a (u,v) coverage which is ex-
+    tended  by  rotation,  so that it can be used to image the (rotationally
+    symmetric) 2-D radial distribution using standard commands  like  UV_MAP
+    and  CLEAN.   The radial profile of the brightness distribution can then
+    be recovered by using any radial cut through this image.
+
+\end{verbatim}
+\subsubsection{UV\_RADIAL /ZERO}
+\index{UV\_RADIAL!/ZERO}
+\begin{verbatim}
+        [NEWSTUFF\]UV_RADIAL x0 y0 Rota Incli /ZERO [Flux] [/SAMPLING  QSTEP
+    [QMIN QMAX]] [/U_ONLY]
+
+    Add  the zero spacing flux to the azimutal average.  If no value is giv-
+    en, the zero spacing flux is extrapolated from  the  shortest  baselines
+    using a parabolic interpolation centered on (u,v)=(0,0).
+
+
+\end{verbatim}
+\subsection{UV\_SHORT}
+\index{UV\_SHORT}
+\begin{verbatim}
+        [NEWSTUFF\]UV_SHORT [Arg]
+
+
+    Compute the Short Spacings from the current Single Dish dataset (read by
+    READ SINGLE) and merge it to the current UV data.
+
+      UV_SHORT takes sensible default guesses for most parameters.  UV_SHORT
+    ?   lists  the  essential  parameter values, UV_SHORT ?? some additional
+    ones, and UV_SHORT ??? even the debugging control variables.
+
+        The current values can be overriden by the user,  who  need  to  set
+    (and  if  needed  to  define  first)  the  corresponding  SHORT_whatever
+    variable.  SHORT_SD_FACTOR  is the main one which may need to be  speci-
+    fied  by  the user, as the Single Dish data is rarely in the appropriate
+    unit.
+
+      The resulting UV table becomes the current UV data, and can   be   im-
+    aged, written, etc...
+
+\end{verbatim}
+\subsubsection{UV\_SHORT /REMOVE}
+\index{UV\_SHORT!/REMOVE}
+\begin{verbatim}
+        UV_SHORT /REMOVE
+
+      Removes any short spacing from the current UV data set.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT Algorithm}
+\index{UV\_SHORT!Algorithm}
+\begin{verbatim}
+
+    UV_SHORT  task  computes  pseudo-visibilities for short or zero spacings
+    from a single dish table of spectra (Class  table)  or  LMV  data  cube.
+    These pseudo visibilities are  appended to the current (presumably a Mo-
+    saic) UV table.
+
+
+    Short spacings are computed when the  Interferometer  dish  diameter  is
+    smaller than the Single-dish diameter, Zero spacings otherwise (see HELP
+    UV_SHORT Zero_Spacing for this case)
+
+    For short spacings, the command performs two steps
+      (1) Creation of a "well behaved" map from the spectra.
+      (2) Extraction of UV visibilities from this map.
+
+    See HELP UV_SHORT Step_i for detailed explanations of the method  steps.
+
+    With  recent  UV tables and Single Dish CLASS table, most parameters are
+    automatically determined. The only parameter  to  be  specified  remains
+    SHORT_SD_FACTOR  (although that one may also be determined automatically
+    if the input single dish data set is in  main-beam  brightness  tempera-
+    ture).
+
+    A  parameter  set to 0 value indicates the appropriate default should be
+    used.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT Zero\_Spacing}
+\index{UV\_SHORT!Zero\_Spacing}
+\begin{verbatim}
+
+          Zero spacings are computed when the single dish  diameter  is  the
+    same  as  the interferometer dish diameter. Zero spacing extraction pro-
+    ceeds differently for Class data tables and 3-D data cubes.
+
+    In the data cube case, the nearest pixel matching the direction of  each
+    field  is taken as the Zero spacing for this field. If there is no point
+    close enough, according to the specified position tolerance  SHORT_TOLE,
+    an error occurs.
+
+    In  the Class data table case, all spectra within the specified position
+    tolerance of a field center are averaged together to  produce  the  Zero
+    spacing. If none is found, an error occcurs.
+
+
+\end{verbatim}
+\subsubsection{UV\_SHORT Step\_1}
+\index{UV\_SHORT!Step\_1}
+\begin{verbatim}
+
+          Step (1) Creation of a "well behaved" map from the spectra.
+
+    Step  (1)  only  occurs  if the input single-dish data set (read by READ
+    SINGLE) is a table of spectra. The table format  is  described  in   the
+    CLASS\GRID command of CLASS.
+      The  identification  of  the  input single-dish data set as a table of
+    spectra is currently only based on the specified file extension: if that
+    is .tab, it is assumed to be a table of spectra.
+
+    It is recommended that this input  table is a collection of single-dish,
+    Nyquist sampled  spectra  covering  twice  the interferometric field  of
+    view  of interest. However, UV_SHORT does *NOT* make any  assumption. It
+    thus tries to compute  a "well behaved" map by linear operations   (con-
+    volutions)  from  the  original spectra, in an  optimum way  from signal
+    to noise  point of view. The  map is extrapolated smoothly  towards zero
+    at  the map  edge in order  to avoid  further  aliasing  in the  Fourier
+    transform  operations required in  Step (2).  This extrapolation  has  a
+    scale  length of  twice the single-dish beam, in order to avoid spurious
+    Fourier components.
+
+    In detail, UV_SHORT performs the following operations:
+
+      - Resampling  (in space) of  the original  spectra on  a regular  grid by
+        convolution  with  a small  (typically  1/4  of  the single-dish  beam)
+        gaussian convolving kernel. In  this process, the weights of individual
+        spectra is carried on a weight map.
+      - Extrapolation by  zero outside  the convex hull  of the  mapped region.
+      - Convolution  of  the  result  by  a  gaussian  twice  as  wide  as  the
+        single-dish beam.   Within the  convex hull of  the mapped  region, the
+        smoothed map is replaced by the original map.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT Step\_2}
+\index{UV\_SHORT!Step\_2}
+\begin{verbatim}
+          Step (2) Extraction of UV visibilities from this map.
+
+    From the given input data cube, or the "well behaved" data cube  created
+    by Step (1), UV_SHORT  computes the visibilities in the following way:
+
+      - Fourier transform of the single dish map;
+      - Division by  the Fourier  transform of  the single dish  beam, up  to a
+        maximum spacing (SHORT_SD_DIAM, in meters);
+      - Inverse Fourier transform to the image plane and then for each pointing
+        center;
+      - Multiplication of the  image by the primary beam  of the interferometer
+        elements;
+      - Fourier transform back to the UV plane;
+      - Creation  of the  visibilities,  with  a given  weight  SHORT_SD_WEIGHT
+        and an appropriate calibration factor to Janskys SHORT_SD_FACTOR.
+
+    Both  the   single-dish and the  interferometer antennas are assumed  to
+    have gaussian beams (SHORT_SD_BEAM and SHORT_IP_BEAM, in radians).
+
+\end{verbatim}
+\subsubsection{UV\_SHORT Variables:}
+\index{UV\_SHORT!Variables:}
+\begin{verbatim}
+
+      Control variables for UV_SHORT are not predefined, except  for  the  3
+    main ones:  SHORT_SD_FACTOR, SHORT_SD_WEIGHT and SHORT_UV_TRUNC.
+
+      All  others should be defined by the user in case the default value is
+    not appropriate, with their appropriate (Real, Char or Logical) types.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_DO\_SINGLE}
+\index{UV\_SHORT!SHORT\_DO\_SINGLE}
+\begin{verbatim}
+
+    Logical value, should be YES except for test purposes.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_DO\_PRIMARY}
+\index{UV\_SHORT!SHORT\_DO\_PRIMARY}
+\begin{verbatim}
+
+    Logical value, should be YES except for test purposes.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_IP\_BEAM}
+\index{UV\_SHORT!SHORT\_IP\_BEAM}
+\begin{verbatim}
+
+    Half-power beam width of the interferometer antennas, in   radians.  The
+    beam is assumed to be gaussian.
+
+      Default  value is 0, meaning that the beam is taken from the Telescope
+    section if present.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_IP\_DIAM}
+\index{UV\_SHORT!SHORT\_IP\_DIAM}
+\begin{verbatim}
+
+    Interferometer diameter for which UV_SHORT will  compute  short  spacing
+    visibilities.
+
+      Default  value is 0, meaning that the diameter is taken from the Tele-
+    scope section if present.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_MCOL}
+\index{UV\_SHORT!SHORT\_MCOL}
+\begin{verbatim}
+
+      *** Obsolescent ***
+
+    See READ SINGLE ClassTable.tab /RANGE  command for an equivalent  method
+    of selecting the appropriate channel range.
+
+    The first and last column to be mapped. For tables produced by GRID com-
+    mand of CLASS, SHORT_MCOL[1] should be 4 and SHORT_MCOL can be set to  0
+    to process all channels.
+
+      Default value: 4 0, appropriate for tables coming from CLASS\GRID com-
+    mand.
+
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_MIN\_WEIGHT}
+\index{UV\_SHORT!SHORT\_MIN\_WEIGHT}
+\begin{verbatim}
+
+    The minimum weights under which a given  point  in  the  map  should  be
+    filled by the smooth map rather than by the gridded (original] map.
+
+      Default value: 0.01
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_MODE}
+\index{UV\_SHORT!SHORT\_MODE}
+\begin{verbatim}
+
+    This  is  an  integer code used for backward compatibility with an older
+    version of the UV_SHORT task, and also for test purpose.
+
+    Allowed values are :
+
+    -1  indicates to create a single UV table with columns for the Phase
+        center offsets only
+    -2  indicates to create a UV table with columns for the Pointing
+        center offsets
+    -3  indicates to create a UV table with the additional columns
+        type being Pointing or Phase, as in the original UV_TABLE$
+    +1  indicates to append to the initial UV table the short spacings
+        with Phase center offsets (which must thus match the initial UV
+        table shape)
+    +2  indicates to append to the initial UV table the short spacings
+        with Pointing center offsets (which must thus match the initial
+        UV table shape)
+    +3  indicates to append to the initial UV table the short spacings
+        (The extra column type being determined automatically).
+
+    The default value is 3, i.e. automatic merging with the current  UV  ta-
+    ble.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_SD\_BEAM}
+\index{UV\_SHORT!SHORT\_SD\_BEAM}
+\begin{verbatim}
+
+    Half-power beam width of the single dish antenna, in radians.  The  beam
+    is assumed to be gaussian.
+
+      Default value is 0, meaning that the beam is taken from the  Telescope
+    section if present.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_SD\_DIAM}
+\index{UV\_SHORT!SHORT\_SD\_DIAM}
+\begin{verbatim}
+
+    Single dish diameter used to produce the input spectra, in meters.
+
+      Default  value is 0, meaning that the diameter is taken from the Tele-
+    scope section if present.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_SD\_FACTOR}
+\index{UV\_SHORT!SHORT\_SD\_FACTOR}
+\begin{verbatim}
+
+    Multiplicative calibration factor; it is used to convert from the single
+    dish map units (e.g., main-beam brightness temperature) to janskys.
+
+    A default value of 0 can be used if the original data file is in unit of
+    Tmb, the main beam brightness temperature, because in this case the con-
+    version factor can be derived from the beam size.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_SD\_WEIGHT}
+\index{UV\_SHORT!SHORT\_SD\_WEIGHT}
+\begin{verbatim}
+
+    Weight scaling factor for the generated visibilities.
+
+    It  is a relative scaling factor in the weights compared to a supposedly
+    optimal weighting to give the best combined synthesized beam. That opti-
+    mal weighting essentially gives the same weight density par unit area in
+    the UV plane than the shortest baselines measured with the  interferome-
+    ter  only.   However, if the single-dish data has not been observed long
+    enough, or has baselines problems for example, this weight may add noise
+    to the overall data set, so could be down-weighted.
+
+      Default: 1.0
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_TOLE}
+\index{UV\_SHORT!SHORT\_TOLE}
+\begin{verbatim}
+
+    The  tolerance  in position (in radians). The behaviour differ for Short
+    and Zero spacings and  Table or 3-D cubes as Single-Dish data.
+
+    If the Single-Dish data is a table of spectra, Spectra differing by less
+    than this amount will be added together prior to gridding. A recommended
+    value is below 1/10th of the Single Dish primary beam. This is valid for
+    Short Spacings and Zero Spacing cases.
+
+    If  the  Single-Dish  data is 3-D data cube, SHORT_TOLE is used only for
+    Zero Spacings. If no pixel is within  SHORT_TOLE  of  an  Interferometer
+    pointing  center,  no short spacing is added for this field and an error
+    occur.
+
+      Default value is 0, meaning using  1/16th of the Single  Dish  primary
+    beam.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_UV\_TRUNC}
+\index{UV\_SHORT!SHORT\_UV\_TRUNC}
+\begin{verbatim}
+
+    No visibility at spacings higher than SHORT_UV_TRUNC is generated. Theo-
+    retical consideration on the method  used  in  this  task  implies  that
+    SHORT_UV_TRUNC should be at most (SHORT_SD_DIAM-SHORT_IP_DIAM).  Smaller
+    values may need to be applied if, for example, the pointing accuracy  of
+    the Single Dish is insufficient.
+
+      Default value is 0, meaning to use SHORT_SD_DIAM-SHORT_IP_DIAM
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_WCOL}
+\index{UV\_SHORT!SHORT\_WCOL}
+\begin{verbatim}
+
+
+    For  tests only: The column of the spectra table containing the weights.
+
+      Default value: 0=3, appropriate for tables coming from CLASS\GRID com-
+    mand.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_WEIGHT\_MODE}
+\index{UV\_SHORT!SHORT\_WEIGHT\_MODE}
+\begin{verbatim}
+
+    The  weighting mode (NATURAL, UNIFORM or GRIDDED).  It is advised to use
+    'NA' for Natural weighting.
+
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_XCOL}
+\index{UV\_SHORT!SHORT\_XCOL}
+\begin{verbatim}
+
+        For tests only: The column of the spectra table  containing  X  off-
+    sets.
+
+      Default value: 0=1, appropriate for tables coming from CLASS\GRID com-
+    mand.
+
+\end{verbatim}
+\subsubsection{UV\_SHORT SHORT\_YCOL}
+\index{UV\_SHORT!SHORT\_YCOL}
+\begin{verbatim}
+
+        For tests only: The column of the spectra table  containing  Y  off-
+    sets.
+
+      Default value: 0=2, appropriate for tables coming from CLASS\GRID com-
+    mand.
+
+\end{verbatim}

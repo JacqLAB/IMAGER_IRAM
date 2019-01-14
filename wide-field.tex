@@ -1,0 +1,660 @@
+
+\section{Wide-field imaging and deconvolution}
+
+We are often asked why the wide-field imaging and deconvolution steps are
+more difficult than their equivalent for single-field. The main answer is
+that doing wide-field observations with an interferometer is kind of
+paradoxical. Indeed, (sub)millimeter interferometers are before all tuned
+to get the best possible spatial resolution. A natural consequence is the
+lack of measurement of the low spatial frequencies which are extremely
+important in wide-field observations. Hence the paradox.  
+
+Progress in the design (ALMA was designed with wide-field imaging as a 
+main goal) or in performances (NOEMA and the 30-m) has led to 
+wide-field images being now customary.  The tools have become much 
+simpler and user-friendly (see below !) but because of its paradoxical 
+nature, wide-field imaging with an interferometer implies a 
+knowledgeable use of those tools.
+
+\subsection{In a nutshell}
+
+\begin{verbatim}
+  1  read uv gag_demo:demo-mosaic-v22.uvt
+ (2)  read single gag_demo:demo-single-v22.tab
+ (3)  uv_short
+  4  uv_map
+  5  clean
+  6  write * MyDemo
+\end{verbatim}
+\begin{enumerate}\itemsep 0pt
+\item Read your \uv{} data
+\item Optionally, read your single-dish data
+\item Optionally, merge it with with the \uv{} data set,
+by using the single-dish data to provide short spacings
+for the interferometer data.
+\item Image as usual
+\item deconvolve as usual
+\item Save the result.
+\end{enumerate}
+You are done. If the \uv{} data set is a \textbf{Mosaic} data set,
+it works as if it is a single-field. But, now, if the result is crazy, do not blame the
+software. Rather read carefully the information below: \textbf{Mosaics} and
+\com{UV\_SHORT} are simple to use, but can be tricky to use well !...
+
+\subsection{General considerations about wide-field imaging}
+
+The measurement equation for a millimeter interferometer is to a good
+approximation (after calibration)
+\begin{equation}
+  V(u,v) = \mbox{FT}\cbrace{B_\emr{primary}.I_\emr{source}}(u,v)+N
+\end{equation}
+where $\mbox{FT}\cbrace{F}(f)$ is the bi-dimensional Fourier transform of
+the function $F$ taken at the spatial frequency $f$, $I_\emr{source}$ the
+sky intensity, $B_\emr{primary}$ the primary beam of the interferometer
+(\ie\ a Gaussian of FWHM the natural resolution of the single-dish antenna
+composing the interferometer), $N$ some thermal noise and $V(u,v)$ the
+calibrated visibility at the spatial frequency $u,v$. The product of the
+sky intensity by the primary beam, which ``quickly'' decreases to zero,
+implies that an interferometer looking at a particular direction of the sky
+will have its field-of-view limited by the size of the primary beam.
+ 
+To image a field-of-view larger than the primary beam size, the antennae of
+an interferometer will be successively pointed in different directions of
+the sky typically separated by half the size of the primary beam. This
+process is called mosaicing and the result requires specific imaging and
+deconvolution steps. Another possibility is to acquire data as the
+interferometer antenna continuously slew through a portion of the sky. This
+second observing mode is called interferometric On-The-Fly (OTF). While
+mosaicing is standard at NOEAM (see section~\ref{sec:mosaicing}), some
+efforts are currently done to commission the OTF observing mode.
+
+Mosaicing and OTF clearly belongs to wide-field imaging. However
+considerations about wide-field imaging start as soon as the size of the
+source is larger than about 1/3 to 1/2 of the interferometer primary beam.
+Indeed, a multiplicative interferometer (\eg\ all interferometer in the
+(sub)mm range) is a bandpass instrument, \ie\ it filters not only the large
+spatial frequencies (this is the effect of the finite resolution of the
+instrument) but also the small spatial frequencies (all the frequencies
+smaller than typically the diameter of the interferometer antennas). An
+important consequence is that a multiplicative interferometer do \emph{not}
+measure the total flux of the observed source. This derives immediately
+from the following property of the Fourier Transform: The Fourier transform
+of a function evaluated at zero spacial frequency is equal to the integral
+of your function. Adapting this to our notation, this gives
+\begin{equation}
+  V(u=0,v=0) \stackrel{\mbox{FT}}{\rightleftharpoons} \sum_{ij~\in~\emr{image}} \cbrace{B_\emr{primary}.I_\emr{source}}_{ij}.
+\end{equation}
+\ie\ the visibility at the center of the \uv{} plane is the total intensity
+of the source. As a multiplicative interferometer filters out in particular
+$V(u=0,v=0)$, the information about the total flux of the observed source
+is lost. In summary, a multiplicative interferometer only gives information
+about the way the flux of the source is distributed in the spatial
+frequencies larger than the primary beam but no information about the total
+flux.
+
+Deconvolution algorithms use, in one way or another, the information of the
+flux at the smallest \emph{measured} spatial frequencies to extrapolate the
+total flux of the source. This works correctly when the size of the source
+is small compared to the primary beam of the interferometer. The extreme
+case is a point source at the phase center for which the amplitude of all
+the visibilities is constant and equal to the total flux of the source:
+Extrapolation is then exact. However, the larger the size of the source,
+the worst the extrapolation, which then underestimates the total source
+flux. This is the well-known problem of the missing flux that observers
+sometimes note when comparing the flux of the source delivered by a mm
+interferometer with the flux observed with a single-dish antenna. The
+transition between right and wrong extrapolation is not well documented. It
+depends on the repartition of the flux with spatial frequencies but also of
+the signal-to-noise ratio of the measured spatial frequencies. It is often
+agreed that the transition happens for sizes between 1/3 and 1/2 of the
+interferometer primary beam. For larger source size, information from a
+single-dish telescope is needed to fill in the missing information and to
+thus obtain a correct result. This is the object of
+section~\ref{sec:short-spacings}.
+
+\subsection{Mosaicing}
+\label{sec:mosaicing}
+
+\subsubsection{Observations and processing}
+
+In a single-field observation, an interferometer tracks a particular
+direction of the sky, named the phase center. The portion of the sky which
+can be image around this direction is directly linked to the size of the
+primary beam. The easiest way to image field-of-view larger than the
+primary beam size is to track one direction of the sky after another until
+the desired field-of-view is filled with small images made around many
+different tracking directions. This observing mode is called mosaicing and
+the tracked observations which constitute the mosaic are called fields.
+
+There are many constraints to optimize mosaicing.
+\begin{description}
+\item[Nyquist sampling of the mosaic field-of-view and mosaic pattern] The
+  mosaic field-of-view must at least be Nyquist-sampled to obtain a
+  reliable image. Each observed field can produce a reliable image of the
+  same shape than the primary beam, \ie\ a circular Gaussian (This assumes
+  that the short-spacing problem has been solved). Nyquist sampling thus
+  implies that the mosaic fields follow an hexagonal compact pattern as
+  this ensures a distance between all neighboring fields of half the
+  primary beam size. When the total observing time is fixed, Nyquist
+  sampling is the best compromise between sensitivity and total
+  field-of-view. Indeed, the distance between neighboring fields could be
+  less (in which case the mosaic would be oversampled) than half the
+  primary beam size. In this case, the sensitivity on each pixel of the
+  final image would increase with the share of the time spent to observe
+  this direction.
+\item[Uniform imaging properties and quick loop around the fields] Getting
+  uniform imaging properties is a desirable feature in the final result.
+  This implies that a \uv{} coverage and a noise level as uniform as
+  possible among the different fields. Quickly looping around the different
+  fields is the easiest way to reach this goal. However, dead time to
+  travel from one field to another must almost be minimized. At NOEMA,
+  the compromise is to pause at least 1 minute on each field and to try to
+  loop over all the fields between two calibrations every 20 minutes.
+  Hence, mosaic done in a single observing run is made of at most 20
+  fields.  Larger mosaic must be observed by group of fields in different
+  observing runs.
+\end{description}
+
+\subsubsection{Imaging}
+
+When combining together (dirty or clean) images, it is important to correct
+the primary beam attenuation to avoid modulation of the signal in the
+combined image. If we forget for the moment the dirty beam convolution, the
+images associated to each fields are noisy measurement of the same quantity
+(the sky brightness distribution) weighted by the primary beam. The best
+estimation of the measured quantity is thus given by the least mean square
+formula
+\begin{equation}
+  \label{eq:mosaic:signal}
+  \displaystyle %
+    M(\alpha,\delta) = \frac{\displaystyle\sum\nolimits_i \frac{B_i(\alpha,\delta)}{\sigma_i^2}\,F_i(\alpha,\delta)}
+      {\displaystyle\sum\nolimits_i \frac{B_i(\alpha,\delta)^2}{\sigma_i^2}},
+\end{equation}
+where $M(\alpha,\delta)$ is the brightness of the dirty/cleaned mosaic
+image in the direction $(\alpha,\delta)$, $B_i$ are the response functions
+of the primary antenna beams in the tracking direction of field $i$, $F_i$
+are the brightness distributions of the individual dirty/cleaned maps, and
+$\sigma_i$ are the corresponding noise values. As may be seen on this
+equation, the intensity distribution of the mosaic is corrected for primary
+beam attenuation. This implies that noise is inhomogeneous. Indeed, if
+$N(\alpha,\delta)$ is the noise distribution and $\sigma(\alpha,\beta)$ is
+its standard deviation in the direction $(\alpha,\beta)$, we have
+\begin{equation}
+  \label{eq:mosaic:noise}
+    N(\alpha,\delta) = \frac{\sum\nolimits_i \frac{B_i(\alpha,\delta)}{\sigma_i^2}\,N_i(\alpha,\delta)}
+      {\sum\nolimits_i \frac{B_i(\alpha,\delta)^2}{\sigma_i^2}},
+\end{equation}
+and
+\begin{equation}
+  \label{eq:mosaic:sigma}
+    \sigma(\alpha,\delta) = %
+    \frac{\sqrt{\sum\nolimits_i \frac{B_i(\alpha,\delta)}{\sigma_i^2}}}
+    {\sum\nolimits_i \frac{B_i(\alpha,\delta)^2}{\sigma_i^2}} = %
+    \frac{1}{\sqrt{\sum\nolimits_i \frac{B_i(\alpha,\delta)^2}{\sigma_i^2}}}
+\end{equation}
+Not only, the noise strongly increases near the edges of the mosaic
+field-of-view. But also, the center of each field is contaminated by
+increased noise level coming from the external regions of the neighboring
+fields. Indeed, the noise corrected for the primary beam attenuation is
+largely increasing where the primary beam is going to zero. To limit these
+effects, both the primary beams used in the above formula and the resulting
+mosaic are truncated.
+
+\subsubsection{Deconvolution}
+
+Standard \clean{} algorithms must be slightly modified to work on a dirty
+mosaics. Indeed, the use of truncated primary beam in the above equations
+is only a first order measure to avoid noise artifacts. However, the noise
+level still increases at the edges of the mosaic, implying that at some
+point the \clean{} algorithms will confuse noise peaks at the mosaic edges
+with true signal. To avoid this, the iterative search is made on a
+signal-to-noise image $M(\alpha,\beta)/\sigma(\alpha,\beta)$ instead of the
+residual image. At the restoration step, the clean component list is used
+to produce the residual map and clean map. Nothing particular is done with
+the remaining signal-to-noise image.
+
+\subsubsection{Typical use}
+
+The processing of mosaics for NOEMA is essentially similar to that
+of single fields. There are only two small changes
+\begin{description}\itemsep 0pt
+\item[Creation of \uv{} table]  A mosaic UV table should be created
+using the /MOSAIC option of command TABLE in CLIC.
+\item[Imaging] is done through \com{UV\_MAP} as for a single field.
+However, the process is different. The command takes into account
+the various fields, the primary beams, and select an optimum projection
+center (phase center). The later may need to be specified by the user
+using the \sicvar{MAP\_CENTER} string, or as argument to \com{UV\_MAP}
+\item[Deconvolution] is also similar, but not all algorithms are
+available. Only  HOGBOM and CLARK are possible so far.
+The change of behavior of the \clean{} algorithms is visualized
+through the change of prompt from \texttt{IMAGER>} to \texttt{MOSAIC}.
+Two additional variables are used for mosaic deconvolution
+\begin{description}\itemsep 0pt
+\item[\sicvar{CLEAN\_SEARCH}] The minimum fraction of a primary beam
+below which no Clean component is searched for.
+\item[\sicvar{CLEAN\_RESTORE}] The minimum fraction of a primary beam
+below which no image restoration is performed. Below this threshold,
+the Clean image is blanked.
+\end{description}
+Finally, note that the mosaic deconvolution produces sky brightness
+images while single-field deconvolution produces images attenuated by the
+primary beam.
+\end{description}
+Although \imager{} makes no specific assumption about the \uv{} coverage
+of individual fields, mosaicing deconvolution will work better
+if all fields are equivalent in \uv{} coverage and noise level
+\footnote{IS THAT TRUE ? : An additional subtlety of the current \imager{} implementation of
+mosaicing is that \mapping{} assumes that the individual fields of the
+mosaic have similar noise level.}
+
+A mosaicing session would thus just be like a single-field
+imaging:
+\begin{verbatim}
+       1 read uv gag_demo:demo-mosaic 
+       2 uv_map
+       3 hogbom /flux 0 10
+       4 show residual
+       5 show clean
+       6 write * demo
+\end{verbatim}
+Comments:
+\begin{description}\itemsep 0pt
+\item[Step 1] Read the UV table
+\item[Step 2] Image the mosaic
+\item[Step 3] Deconvolve
+\item[Steps 4-5] Look at the result
+\item[Steps 6] Save the result
+\end{description}
+
+\section{Short and Zero spacings} 
+\label{sec:short-spacings}
+
+\subsection{In a nutshell}
+
+\begin{verbatim}
+  1  read uv gag_demo:demo-mosaic-v22.uvt
+  2  read single gag_demo:demo-single-v22.tab
+  3  uv_short
+  4  uv_map; clean
+  5  view clean
+  6  write * MyDemo
+\end{verbatim}
+\begin{enumerate}\itemsep 0pt
+\item Read your \uv{} data
+\item read your single-dish data
+\item Merge it with with the \uv{} data set,
+\item Image and deconvolve as usual
+\item check the result
+\item Save it. 
+\end{enumerate}
+You are done. This works for mosaics as well as single fields.
+But, again, if the result are crazy, do not blame the software. 
+Rather read carefully the information below: 
+\com{UV\_SHORT} is simple to use, but can be tricky to use well !...
+
+\subsection{Principle}
+Let's note $D$ the diameter of the single-dish antenna ($D = 30$m for the
+IRAM-30m telescope) used to produce the short-spacing information and $d$
+the diameter of the interferometer antennas ($d = 15$m for \PdBI{}). We
+already mentioned that a multiplicative interferometer filters out all the
+spatial frequencies smaller than $\sim d$ meters. When this information is
+needed to get reliable results, the source should also be observed with a
+single-dish antenna to produce the missing information.  The single-dish
+antenna furnishes information about all spatial frequencies up to $\sim D$
+meters (but this information is weighted by the single-dish beam shape,
+\ie\ high frequencies are measured with a worse signal-to-noise ratio than
+low frequencies). To recover all the information at spatial frequencies
+smaller than $\sim d$ meters, the diameter of single-dish antenna must be
+larger or equal to the diameter of the interferometer antennae: $D \ge d$.
+
+\subsection{Algorithms to merge single-dish and interferometer information}
+
+The measurement equations of a single-dish and an interferometer are quite
+different from each other. Indeed, the measurement equation of a
+single-dish antenna is
+\begin{equation}
+  I_\emr{meas}^\emr{sd} = B_\emr{sd} \star I_\emr{source} + N,
+\end{equation}
+\ie\ the measured intensity ($I_\emr{meas}^\emr{sd}$) is the convolution of
+the source intensity distribution ($I_\emr{source}$) by the single-dish
+beam ($B_\emr{sd}$) plus some thermal noise, while the measurement equation
+of an interferometer can be rewritten as
+\begin{equation}
+  I_\emr{meas}^\emr{int} = B_\emr{dirty} \star \cbrace{B_\emr{primary}.I_\emr{source}} + N,
+\end{equation}
+\ie\ the measured intensity ($I_\emr{meas}^\emr{int}$) is the convolution
+of the source intensity distribution times the primary beam
+($B_\emr{primary}.I_\emr{source}$) by the dirty beam ($B_\emr{dirty}$) plus
+some thermal noise. $B_\emr{sd}$ has very similar properties than
+$B_\emr{primary}$ and very different properties than $B_\emr{dirty}$.  In
+radioastronomy, $B_\emr{sd}$ and $B_\emr{primary}$ both have Gaussian
+shapes. Moreover, the fact that we will use the single-dish information to
+produce the short-spacing information filtered out by the interferometer
+implies that $B_\emr{sd}$ and $B_\emr{primary}$ have similar full width at
+half maximum. Now, $B_\emr{dirty}$ is quite far from a Gaussian shape with
+the current generation of interferometer (in particular, it has large
+sidelobes) and the primary side lobe of $B_\emr{dirty}$ has a full width at
+half maximum close to the interferometer resolution, \ie\ much smaller than
+the FWHM of $B_\emr{sd}$.
+
+Merging both kinds of information obtained from such different measurement
+equations thus asks for a dedicated processing. There are mainly two
+families of short-spacing processing: The hybridization and the
+pseudo-visibility techniques.
+
+\subsubsection{Hybridization technique}
+
+In this family, most of the processing is done on the interferometric data
+alone. Indeed, the interferometric data is deconvolved and corrected for
+the primary beam contribution to obtain
+\begin{equation}
+  I_\emr{clean}^\emr{int} = B_\emr{clean} \star I_\emr{source} + N',
+  \label{eq:clean}
+\end{equation}
+where $B_\emr{clean}$ is a Gaussian of FWHM equal to the interferometer
+resolution and $N'$ is some thermal noise corrected for the primary beam
+contribution.  Two main facts are hidden in this formulation: 1) the
+field-of-view of the observation is obviously limited to the observed
+portion of the sky and 2) more importantly, the lack of short-spacings has
+not yet been overcome and a better formulation would be
+\begin{equation}
+  I_\emr{clean}^\emr{int} = \mbox{Highpass-filter}\cbrace{B_\emr{clean} \star I_\emr{source}} + N'.
+\end{equation}
+The simplicity of equation~\ref{eq:clean} is thus slightly misleading but
+we will keep it for the sake of simplicity. The hybridization method
+consists in combining two images ($I_\emr{meas}^\emr{sd}$ and
+$I_\emr{clean}^\emr{int}$) in the \uv{} plane.
+\begin{enumerate}
+\item Both images are first spatially regridded on the same fine grid.
+\item The FFT of those two images are computed, and linearly combined by
+  selecting the low spatial frequencies from FFT($I_\emr{meas}^\emr{sd}$)
+  and the high spatial frequencies from FFT($I_\emr{clean}^\emr{int}$).
+  The transition between low and high spatial frequency
+\item The result is FFTed back to the image plane to produce a final,unique
+  image, which takes into account both single-dish and interferometric
+  information.
+\end{enumerate}
+The method has the following free parameters: the transition radius and the
+detailed shape of that transition.  To avoid discontinuity, the transition
+shape is chosen to be reasonably smooth. The spatial frequency of
+transition is generally chosen to the smallest spatial frequency reliably
+measured by the interferometer (\eg\ about 20~m for NOEMA).
+
+\subsubsection{Pseudo-visibility technique}
+
+\paragraph{General description}
+
+In this family, the single-dish information is heavily processed before
+merging with the interferometric information. The basic idea is to produce
+from the single-dish observations pseudo-visibilities similar to the ones
+that would be produced by the interferometer if they were not filtered out.
+\begin{enumerate}\itemsep 0pt
+\item The Single-Dish measurements are re-gridded and then FFTed into the
+  \uv{} plane.
+\item The data are deconvolved of the single-dish beam ($B_\emr{sd}$)
+  convolution by division by its Fourier Transform (truncated to the
+  antenna diameter).
+\item The data are FFTed back to the image plane and multiplied by the
+  interferometer primary beam, $B_\emr{primary}$.
+\item The result is FFTed again in the \uv{} plane where the visibilities
+  are sampled on a regular grid.
+\item In the case of a mosaic, the two last operations are performed for
+  each pointing center.
+\end{enumerate}
+Using the properties of the Fourier transform, we can rewrite the
+measurement equation of an interferometer as
+\begin{equation}
+  V(u,v) = \cbrace{\mbox{FT}(B_\emr{primary}) \star \mbox{FT}(I_\emr{source})}(u,v)+N.
+\end{equation}
+This equation means that the visibility measured by an interferometer at
+the spatial frequency $(u,v)$ is the convolution of the Fourier transform
+of the source intensity distribution by the Fourier transform of the
+primary beam. Hence, to get pseudo-visibilities truly consistent with
+interferometric visibilities, we must be able to reliably compute the
+convolution by the Fourier transform of the primary beam. This implies that
+we can compute pseudo-visibilities only for spatial frequencies lower than
+$D-d$. The use of the IRAM-30m to produce the short-spacing information of
+the \PdBI{} is thus ideal as it enables to recover pseudo-visibilities up
+to 15~m ($=30\,\mbox{m}-15\,\mbox{m}$). Once the pseudo-visibilities have
+been computed, they are merged with the interferometric visibilities and
+standard imaging and deconvolution are then applied to the merged data set.
+
+
+\paragraph{Single-dish vs interferometer weight}
+
+In all cases involving short spacings, the relative weight of the single
+dish data to interferometer data is critical. Within the restrictions
+imposed by the noise level, this relative weight is a free parameter. It is
+all the more important that the Fourier transform of the \uv{} plane
+density of weights is the dirty beam, a key parameter of the deconvolution.
+The general goal is to have a dirty beam as close as possible to a
+Gaussian. As the Fourier transform of a Gaussian is a Gaussian, we search
+for obtaining a \uv{} plane density of weights as close as possible to a
+Gaussian. In general, the short spacing frequencies are small compared to
+the largest spatial frequency measured by an interferometer. This implies
+we can use the linear approximation of a Gaussian, \ie\ a constant, in the
+range of frequencies used for the short spacing processing. We thus end up
+with the need to match (as far as possible) the Single-Dish and
+interferometric densities of weights in the \uv{} plane. In practice, we
+compute the density of weights from the single-dish in a \uv{} circle of
+radius $1.25 d$ and we match it to the averaged density of weights from the
+interferometer in a \uv{} ring between 1.25 and $2.5 d$. Experience shows
+that this gives the right order of magnitude for the relative weight and
+that a large range of relative weight around this value gives very similar
+final results.
+
+When processing IRAM-30m data to combine to NOEMA data, this criterion
+implies a large down-weighting of the IRAM-30m data which may make think
+that too much observing time was used at the IRAM-30m data. However, just
+using the above criterion to determine the observing time needed at the
+IRAM-30m would in general lead to very low signal-to-noise ratio of the
+single-dish map. In such a case, it is very difficult to detect problems
+which would translate in strong artifacts in the IRAM-30m + NOEMA
+combination. We recommend to ask for enough IRAM-30m time to get a
+\emph{median} signal-to-noise ratio of 5 on the single-dish map. This ratio
+should be achieved for all velocity channels of interest (which may include
+the line wings).
+
+\subsubsection{Comparison}
+
+The simplicity of the hybridization technique is its main advantage. It is
+simple to understand and simple to implement. However, this method works
+badly in practice because it is truly difficult to obtain a
+reliable deconvolution of interferometric data alone when short-spacing
+information is important. An interferometer is a spatial pass-band
+filter, filtering in particular the zero spacing. This implies that the total flux in the
+dirty image is zero (\ie\ as much negative as positive flux in the dirty
+image) but that the dirty beam integral is also zero (\ie\ as much negative
+as positive sidelobes). Adding the short-spacing information (and in
+particular the zero spacing) through the pseudo-visibility method, we
+enforces the positivity of the dirty image total flux and of the dirty beam
+integral. It is well-known that trying to deconvolve a mosaic built only
+with interferometric data is quite difficult. It almost always requires the
+definition of support where the \clean{} algorithms can search for clean
+components with the clear risk to bias the final result. In contrast,
+adding the short-spacing information through pseudo-visibilities enables an
+almost straightforward \clean{} deconvolution \emph{without} the need of
+any support.
+
+For the sake of illustration, let us assume an intensity distribution 
+made of a large scale structure (\eg{} a smoothly varying intensity) 
+superimposed with a small scale distribution both in emission and 
+absorption. An interferometer will filter out the smooth 
+distribution. If there is no additional zero spacing 
+information, the smooth distribution is completely lost with 
+the important consequence that the final deconvoled image will have 
+positive (emission) and negative (absorption) structures. Trying to 
+reproduce both negative and positive structures is one of the most 
+difficult task for deconvolution algorithms. In addition, the 
+presence of large negative structures create instabilities in the 
+algorithms of the \clean{} family (because it is difficult to 
+distinguish between negative absorption structures and negative 
+sidelobes of emission structures). Only the definition of support 
+around positive emission peaks may succeed to stabilize the \clean{} 
+algorithms with the drawback of biasing the result.
+
+Both kind of algorithms (hybridization and pseudo-visibility) are
+implemented in \gildas{}. However, we strongly recommend to use the
+pseudo-visibility algorithm. That is why only the pseudo-visibility method
+is packaged in a user-friendly way, in the \com{UV\_SHORT} command.
+\citet{pety01b,pety01a,pety01c} showed through
+simulations that 1) the pseudo-visibility algorithm implemented in
+\gildas{} enable extremely reliable results (fidelities of a few thousands)
+on ideal observations and 2) the accuracy of the wide-field imaging is
+limited by pointing errors, amplitude calibration errors and atmospheric
+phase noise (and not by the used algorithms), even for ALMA.
+
+\subsection{Hybridization technique and ALMA}
+A special case where Hybridization can be extremely useful is that
+of ALMA observations involving the main 12-m array, the ACA and single-dish
+data with the 12-m antennas.  In some circumstances, an optimal
+result is obtained by hybridizing Cleaned images produced
+from the mosaics obtained by combining (using the pseudo-visibility method)
+ACA and Single-dish data
+as short spacings, with another mosaic obtained with the 12-m
+data and the Single-dish data together.
+
+The deconvolution of each mosaic is stabilized by the addition
+of the 12-m single-dish zero or short spacings, and these good
+mosaics are then merged in an optimal way by using the best
+region of the \uv{} plane that they sample.
+
+\subsection{The Zero spacing: an important subset}
+
+An important subset of the pseudo-visibility method is the production of
+only the zero spacing. Indeed, the zero spacing is just the total flux of
+the observed field-of-view. Hence, if the observed field-of-view is small
+enough to fit in the single-dish beam (this is in particular always the
+case if $D = d$), a single spectrum observed with the single-dish telescope
+in the direction of the interferometer phase center may be used as zero
+spacing, only a scaling from Kelvin to Jansky is needed. This is the poor
+man solution as only part of the short spacing information is recovered
+by this technique.
+
+\subsection{Short Spacings in practice: command \texttt{UV\_SHORT}}
+
+Our algorithm to produce the short-spacing information is coded in the
+\com{UV\_SHORT} command.  \com{UV\_SHORT} will \textbf{add} the 
+short spacing information to the current \uv{} table (read by
+command \comm{READ}{UV} and optionally transformed by further 
+\texttt{\color{magenta} UV\_...} processing commands). 
+
+\com{UV\_SHORT} has a substantial number (17)
+of control variables, but with experience, they have been reduced
+to 5 significant ones, among which only 3 really matter in most cases
+but often can be used with their default values:
+\begin{description}\itemsep 0pt
+\item{\sicvar{SHORT\_SD\_FACTOR}} The single-dish brightness unit to 
+flux conversion factor. If set to zero, \com{UV\_SHORT} will attempt
+to derive it from the information available in the single-dish data   
+\item{\sicvar{SHORT\_UV\_TRUNC}} The longest baseline retained in
+the pseudo-visibilities. It defaults to the maximum theoretically possible,
+the single-dish diameter minus the interferometer diameter. Smaller
+values are allowed, and even recommended if the pointing quality
+of the single-dish data is moderate.
+\item{\sicvar{SHORT\_SD\_WEIGHT}} The relative weight scaling factor
+between the pseudo-visibilities and the interferometer visibilities.
+\end{description}
+The relative weight of these visibilities is derived by \com{UV\_SHORT}
+in order to optimize the shape of the overall synthesized beam. 
+\sicvar{SHORT\_SD\_WEIGHT} is a scale factor to this optimum weight,
+which may need to differ from 1 in case of poor \uv{} coverage in
+the interferometer data or 
+noisy single-dish data (it should be lower than 1 in this case).
+
+
+\texttt{UV\_SHORT ?} will list these 3 major ones, and \texttt{UV\_SHORT ??} the
+2 remaining main ones:
+\begin{description}\itemsep 0pt
+\item{\sicvar{SHORT\_TOLE}} The position tolerance in the single-dish map
+\item{\sicvar{SHORT\_MIN\_WEIGHT}}  The minimum (relative) weight for a spectrum
+in the single-dish map to be included.    
+\end{description}
+as well as four optional ones needed only if the original single-dish
+and \uv{} data lacks the proper information (antenna diameter and beam sizes)
+
+The \com{UV\_SHORT} command starts from data in a the format produced by the \class{} command
+\texttt{TABLE}
+command, and read in \imager{} through command \comm{READ}{SINGLE}. 
+Basically, this is a GDF table containing one line per spectrum,
+the columns representing the lambda offset, beta offset, weight, and the
+spectrum intensities. \footnote{This format is subject to change: Please, refer to
+the \com{TABLE} documentation for up-to-date information}. This data
+must match spectrally the velocity sampling of the interferometric
+data. This can be obtained using the \texttt{/RESAMPLING} option of
+command \texttt{TABLE} in \class{}.
+
+The \comm{READ}{SINGLE} and \com{UV\_SHORT} commands also support
+a 3-D data cube (as produced by e.g. command \texttt{XY\_MAP} in \class{})
+as input instead of a \class{} table. Again, the
+velocity axis must match that of the interferometric data.
+
+\emph{\color{red} temporary results as SIC variables and associated WRITE commands
+to save them ?}
+
+\com{UV\_SHORT} will automatically produce the Zero spacing from
+the single-dish data when the data does not allow other short spacings
+to be evaluated.
+
+Finally, as \com{UV\_SHORT} \textbf{adds} the 
+short spacing information, \comm{UV\_SHORT}{/REMOVE} allows to remove
+it (there is no direct ``replace'' possibility).
+
+\subsection{Practical considerations}
+
+\subsubsection{When are short-spacing information needed?}
+
+\begin{itemize}
+\item If the source size is smaller than 1/3 the primary beam size,
+  short-spacing information is superfluous.
+\item If the source size is between 1/3 and 1/2 the primary beam size of
+  NOEMA antennas, a single spectra obtained at the IRAM-30m telescope in
+  the direction of the source can be used to produce the zero spacing
+  information with the \com{UV\_ZERO} task. Indeed, the IRAM-30m diameter
+  being twice the diameter of the \PdBI{} antenna, all the flux of the
+  source will be measured by a single IRAM-30m spectrum only if the size of
+  the source is smaller than 1/2 the primary beam size of \PdBI{} antennae.
+\item If the source size is larger than 1/2 the primary beam size of
+  NOEMA antennas, short-spacing information under the form of an IRAM-30m
+  map is almost always mandatory. The only exception could be wide-field
+  imaging of a region made of unresolved or small (compared to the primary
+  beam size) sources as it may happen when mapping close-by external
+  galaxies for instance. However, adding short-spacing will anyway help the
+  deconvolution. In case of doubt, always add short-spacing information.
+\end{itemize}
+
+\subsubsection{How to optimize single-dish observations?}
+
+One of the main difficulty of the short-spacing problematic is the need of
+observations from a single-dish telescope at least as big as the
+interferometer antennas\footnote{If there were no pointing errors,
+a single-dish of the same size as the interferometer antennas
+would be strictly sufficient.}. In this respect, the IRAM-30m and NOEMA are very
+complementary. Nevertheless, when observing with the single-dish telescope,
+a few precautions are needed to avoid contaminating the interferometric
+data with possible artifacts of single-dish data.
+\begin{itemize}\itemsep 0pt
+\item The field-of-view of the single-dish map must be twice the
+  field-of-view covered by the mosaic. The only exception to this rule
+  happens when the source intensity decreases to zero in a smaller
+  field-of-view. Indeed, there is no point in observing an empty sky.
+\item The observing strategy must enforce Nyquist sampling (or better) of
+  the source at the resolution of the single-dish telescope.
+\item A particular care should be taken of the pointing, tracking and
+  amplitude calibration and baseline removal as those are critical issues
+  in obtaining a high quality single-dish map to produce short-spacing
+  information. For instance, data with too large tracking errors should be
+  discarded.
+\item We advise to make many On-The-Fly coverages of the observed
+  field-of-view to get homogeneous observing conditions. Scanning in
+  perpendicular directions is needed to decrease stripping.
+\end{itemize}
+Sometimes, single-dish telescope time is scarce and some of the above
+criteria can not be fulfilled. In those cases, you can still try to use
+your single-dish observations and our algorithm will try to make its best
+to get a sensible result. However, any artifact in the combination may
+directly come from wrong single-dish observations. In other words, do
+\emph{not} blame the software unless you are sure of the quality of the
+quality of your single-dish (and interferometric) observations...
+

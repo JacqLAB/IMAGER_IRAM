@@ -1,0 +1,208 @@
+\documentclass[11pt]{article}
+\usepackage{natbib}
+\usepackage{color}
+\include{gildas-def} % GILDAS ( + at some point IMAGER) specific definitions
+%
+\pdfminorversion=7
+
+% \newcommand{\lang}[1]{\texttt{\MakeUppercase{#1}$\backslash$}}
+
+\newcommand{\lmv}{\texttt{lmv}}
+\newcommand{\clean}{\texttt{CLEAN}}
+\newcommand{\uv}{$uv$}
+\newcommand{\emm}[1]{\ensuremath{#1}}   % Ensures math mode.
+\newcommand{\emr}[1]{\emm{\mathrm{#1}}} % Uses math roman fonts.
+\newcommand{\nds}[1]{\emm{\displaystyle#1}} % Normal display size for array and tabular environment.
+\newcommand{\paren}[1]  {\nds{\left(  #1 \right) }} % Parenthesis. 
+\newcommand{\cbrace}[1] {\nds{\left\{ #1 \right\}}} % Curly Braces.
+\newcommand{\abs}[1]{\emm{\left| #1 \right|}} % Absolute value.
+
+\begin{latexonly}
+\renewcommand{\sic}    {\mbox{{\color{red} \sc sic}}}
+\renewcommand{\greg}   {\mbox{{\color{red} \sc greg}}}
+\renewcommand{\mapping}{\mbox{{\color[rgb]{1,0,0}{\sc mapping}}}}
+\renewcommand{\com}[1] {\mbox {{\color{magenta}\tt #1}}\index{#1}}
+\renewcommand{\comm}[2]{\mbox {{\color{magenta}\tt #1 #2}}\index{#1!#2}}
+\end{latexonly}
+%
+%\newcommand{\PdBI}{\mbox{PdBI}}
+\newcommand{\NOEMA}{\mbox{NOEMA}}
+%\newcommand{\ALMA}{\mbox{ALMA}}
+\newcommand{\IRAM}{\mbox{IRAM}}
+\newcommand{\imager} {\mbox{{\color[rgb]{1,0,0}{\sc imager}}}}
+\newcommand{\sicvar}[1] {\mbox {\color{blue}\tt #1}}
+\newcommand{\lang}[1]{\mbox {\color{magenta}\texttt{\MakeUppercase{#1}$\backslash$}}}
+
+\begin{htmlonly}
+%\renewcommand{\sic}    {\mbox{{\sc sic}}}
+%\renewcommand{\greg}   {\mbox{{\sc greg}}}
+%\renewcommand{\mapping}{\mbox{{{\sc mapping}}}}
+%\renewcommand{\com}[1] {\mbox {\tt #1}\index{#1}}
+%\renewcommand{\comm}[2]{\mbox {\tt #1 #2}\index{#1!#2}}
+\newcommand{\imager} {\mbox{{{\sc imager}}}}
+\newcommand{\sicvar}[1] {\mbox {\tt #1}}
+\newcommand{\lang}[1]{\mbox {\texttt{\MakeUppercase{#1}$\backslash$}}}
+\renewcommand{\color}[1]{} % {\mbox {\tt #1 #2}\index{#1!#2}}
+\end{htmlonly}
+
+\makeindex{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+% \frontmatter{} % For BOOKS only
+
+\begin{center}
+  \huge{
+  \textbf{IMAGER} 
+  } \\[2\bigskipamount]
+  \Large{}
+  A \gildas{} software\\[\bigskipamount]
+  November 19th, 2018\\[\bigskipamount]
+  Version 1.0\\[2\bigskipamount]
+  \large{}
+  Questions? Comments? Bug reports? Mail to: \texttt{gildas@iram.fr}\\[2\bigskipamount]
+  The \gildas{} team welcomes an acknowledgment in publications\\
+  using \gildas{} software to reduce and/or analyze data.\\
+  Please use the following reference in your publications:\\
+  \texttt{http://www.iram.fr/IRAMFR/GILDAS}\\[2\bigskipamount]
+\end{center}
+
+\begin{description}
+\item[Documentation] \mbox{}\\
+  \credit{E.~Di~Folco$^{3}$}{S.~Guilloteau$^{3}$}{J.~Pety$^{1,2}$} 
+\item[Software] \mbox{}\\
+  \credit{S.~Guilloteau$^{3}$}{S.~Bardeau$^{1,2}$}{}
+\end{description}
+1. IRAM\\
+2. Observatoire de Paris\\
+3. Laboratoire d'Astrophysique de Bordeaux
+
+\begin{rawhtml}
+  Note: this is the on-line version of the IMAGER Manual.
+  A <A HREF="../../pdf/imager.pdf"> PDF version</A>
+  is also available.
+\end{rawhtml}
+
+\bigskip{} %
+
+Related information is available in:
+\begin{latexonly}
+  \begin{itemize}
+  \item{IRAM Plateau de Bure Interferometer: Introduction}
+  \item{IRAM Plateau de Bure Interferometer: OBS Users Guide}
+  \item{IRAM Plateau de Bure Interferometer: Atmospheric Calibration}
+  \item{IRAM Plateau de Bure Interferometer: Calibration Cookbook}
+  \item{CLIC: Continuum and Line Interferometric Calibration}
+  \item{MIS:  Millimeter Interferometry Simulation Tools}
+  \item{GREG: Graphical Possibilities}
+  \item{SIC:  Command Line Interpretor}
+  \end{itemize}
+\end{latexonly}
+%
+\begin{rawhtml}
+  <UL>
+  <LI> IRAM Plateau de Bure Interferometer: <A HREF="../noema-intro-html/noema-intro.html">
+  Introduction</A>
+  <LI> IRAM Plateau de Bure Interferometer: <A HREF="../obs-html/obs.html"> 
+  OBS Users Guide</A>
+  <LI> IRAM Plateau de Bure Interferometer: <A HREF="../pdbi-cookbook-html/pdbi-cookbook.html"> 
+  Calibration CookBook</A>
+  <LI> <A HREF="../clic-html/clic.html"> CLIC:</A>  
+  Continuum and Line Interferometric Calibration 
+  <LI> <A HREF="../mis-html/mis.html"> MIS:</A>
+  Tools for Millimeter Interferometry Simulation
+  <LI> <A HREF="../greg-html/greg.html"> GREG: Graphical Possibilities</A>
+  <LI> <A HREF="../sic-html/sic.html">   SIC:  Command Line Interpretor</A>
+  </UL>
+\end{rawhtml}
+
+\newpage
+\tableofcontents{} %
+
+% \mainmatter{} % for BOOKS only
+
+\newpage
+\section{Warning}
+
+\textbf{This document is under construction; it is partly based on the older documentation of \mapping{}.}
+
+\imager\ is an interferometric imaging package, tailored for usage
+  simplicity and efficiency for multi-spectral data sets.
+\textbf{\imager\  is *** NOT *** \mapping }
+ 
+ Although the underlying algorithms are the same as in the
+\mapping\ program, the overall concepts for user interaction differ:
+\begin{itemize}
+\item The user interface to \mapping{} is file-oriented. The user interacts
+  with \mapping\ generally by a script, packaging a complex sequence of
+  commands, tasks, reads and writes to intermediate files. 
+  %Fine control of the script parameters are in general done through widgets.
+\item
+    The basic concept of \imager{} is opposite: a single \com{READ} of data, a
+  few simple processing commands with built-in intelligent parameter
+  guesses, a visual user control, and a single \com{WRITE} of the results
+  once the user is satisfied of it.
+\end{itemize}
+
+
+\newpage
+\input{basic-concepts}
+
+\newpage
+\input{uv-table}
+
+\newpage
+\input{single-field}
+
+\newpage
+\input{wide-field}
+
+\newpage
+\input{self-calibration}
+
+\newpage
+\input{view-show}
+
+%\input{in-out-imager}
+
+%% \section{OTF}
+
+
+%% \chapter{Imaging simulation}
+
+% {Internal Helps}
+\newpage
+\section{CLEAN Language Internal Help} \label{CLEANH}
+\input{imager-help-clean}
+
+\newpage
+\section{CALIBRATE Language Internal Help} \label{CLEANC}
+\input{imager-help-calib}
+
+\newpage
+\section{NEWSTUFF Language Internal Help} \label{CLEANN}
+\input{imager-help-news}
+
+%\section{Description of Associated Tasks}
+%\input{mapping-task-summ}
+%the file mapping-task-summ.tex was copied from gildas-src-dev/integ/doc/tasks
+% see also mapping-tasks-list.tex
+\appendix{}
+
+\section{Properties of the Fourier Transform}
+
+The Fourier Transform of a product of two functions is the convolution of
+the Fourier Transforms of the functions.
+
+% \backmatter{} % for BOOKS only
+
+\bibliography{imager}
+\bibliographystyle{aa}
+
+\printindex{} %
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

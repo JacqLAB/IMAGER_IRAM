@@ -1,0 +1,160 @@
+\section{Visual Checks and Image Displays}
+
+The ultimate (and often sole) way to evaluate the data quality
+and suitability for scientific analysis is to visualize it.
+\imager{} offer simple, yet powerfull, tools to do so.
+
+\subsection{the \texttt{UV\_PREVIEW} command}
+With large datasets, image can be long. \imager{} offers a
+simple, fast pre-imaging viewer through command \com{UV\_PREVIEW}.
+
+This command will display the spectra obtained towards the
+phase center at several spatial scales (the default is for 4 tapers).
+It will also attempt to detect spectral features, by analyzing for
+each spectrum the noise statistics and the outliers. It performs
+automatic line identifications, using a database in the \lang{LINEDB}
+format in file \texttt{\$HOME/image.linedb} .
+Potential spectral lines in the band are displayed in blue, and
+detected ones in red.
+\com{UV\_PREVIEW} also warns the user about improper scaling
+of the data weights.
+The line emission region is indicated in grey.
+
+The result of this automatic signal detection and line identification
+is saved in a SIC structure named \sicvar{PREVIEW\%}, that is 
+automatically used by commands \comm{UV\_BASELINE}{/CHANNEL} and
+\comm{UV\_FILTER}{/CHANNEL} to respectively remove the continuum and
+filter the line emission to produce a continuum data set. 
+The detected line frequencies are stored in
+ \sicvar{PREVIEW\%FOUND\%FREQ} and their names in
+\sicvar{PREVIEW\%FOUND\%LINES}. This can be used to reference
+the velocity scale of the data to one of the detected lines, by
+using command \comm{SPECIFY}{FREQUENCY}\texttt{'PREVIEW\%FOUND\%FREQ[1]'} 
+for example before further processing.
+
+An example is shown in Fig\ref{fig:preview}
+\begin{figure}
+  \centering
+  \includegraphics[width=16cm]{preview.pdf}
+  \caption{The \com{UV\_PREVIEW} output
+\label{fig:preview}}
+\end{figure}
+
+
+\subsection{the \texttt{SHOW} command}
+
+In general, command \com{SHOW} allows a per-plane display of any SIC 
+3-D image variable, with contours overlaid on bitmap for each plane: 
+e.g.\\
+\texttt{SHOW DIRTY 30 -30} 
+will display contour and bitmaps of each channel of the \texttt{DIRTY}
+image, starting for channel 30 and ending 30 channels before the last one.
+See Fig.\ref{fig:show} for an example. 
+
+For \uv{}  data, \comm{SHOW}{UV} can plot visibility values
+such as amplitude as a function of time, baseline length, etc...,
+again on a per channel basis. 
+
+\com{SHOW} can also display more specific issues:
+\begin{itemize}\itemsep 0pt
+\item \comm{SHOW}{CCT} will display the cumulative flux as a function 
+of number of clean components (Fig.\ref{fig:cct}). 
+\item \comm{SHOW}{COVERAGE} will display the \uv{} coverage (it
+assumes there is only one, and not one per channel, because the
+display time is long, see Fig.\ref{fig:coverage})
+\item \comm{SHOW}{SELFCAL} behaves as \comm{SELFCAL}{SHOW}
+\item \comm{SHOW}{FIELDS} display the fields of a Mosaic.
+\item \comm{SHOW}{NOISE} display the histogram of the intensity
+distribution for each channel, estimating the noise by fitting
+a Gaussian in these histograms (see Fig.\ref{fig:noise}.
+\end{itemize}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=16cm]{show.pdf}
+  \caption{The \com{SHOW} output.
+\label{fig:show}}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{cct.pdf}
+  \caption{The \comm{SHOW}{CCT} output.
+\label{fig:cct}}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{coverage.pdf}
+  \caption{The \comm{SHOW}{COVERAGE} output. Colors indicate
+  different dates.
+\label{fig:coverage}}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=16cm]{noise.pdf}
+  \caption{The \comm{SHOW}{NOISE} output.
+\label{fig:noise}}
+\end{figure}
+
+A direct use on Gildas 3-D image files is also possible:
+\com{SHOW}\texttt{Filename.ext} will directly display the
+file if possible.
+
+\subsection{the \texttt{VIEW} command}
+
+The \com{VIEW} command is a powerful alternative to \com{SHOW}, the
+later being inefficient when the number of spectral line channels
+is large. 
+
+\com{VIEW} provides a 4 panel display for 3-D data cubes, with
+the current channel bitmap, the integrated area bitmap, the current
+spectrum and the integrated intensity spectrum.  The spectra
+can be displayed with 2 simultaneous frequency windows, a broad
+and a zoomed one, allowing browsing through a large number of
+channels. Spectral line identification can be 
+
+\comm{VIEW}{CCT} will display the cumulative flux of Clean components
+for all channels in just one panel, instead of a per-channel panel
+for \comm{SHOW}{CCT}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=16cm]{view.pdf}
+  \caption{The \com{VIEW} output.
+\label{fig:view}}
+\end{figure}
+
+\subsection{the \texttt{SELFCAL SHOW} command}
+
+Verifying the convergence of a self-calibration is important.
+Figure \ref{fig:selfphase} shows an example, while Fig.\ref{fig:selftot}
+shows the total phase correction between the original data and
+the last iteration. The displayed range can be controlled
+by variables \sicvar{SELF\_PRANGE[2]} for the Phase, 
+\sicvar{SELF\_ARANGE[2]} for the Amplitude, and \sicvar{SELF\_TRANGE[2]} 
+for the Time. Error bars are displayed if \sicvar{ERROR\_BARS} is \texttt{YES},
+as shown in Fig.\ref{fig:selfamp} for amplitude.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{self-phase.pdf}
+  \caption{The \comm{SELFCAL}{SHOW} output after a phase calibration,
+  showing the convergence of the corrections between the last 2
+  iterations.
+\label{fig:selfphase}}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{self-phase-total.pdf}
+  \caption{The \comm{SELFCAL}{SHOW}4 output after a phase calibration,
+  showing the difference between iteration 4 and the original
+  data.  
+\label{fig:selftot}}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=12cm]{self-ampli-total.pdf}
+  \caption{The \comm{SELFCAL}{SHOW}4 output after an amplitude self calibration,
+  showing the difference between iteration 4 and the original
+  data, with the error bars.  
+\label{fig:selfamp}}
+\end{figure}

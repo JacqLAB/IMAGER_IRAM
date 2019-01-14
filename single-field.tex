@@ -1,0 +1,1057 @@
+\section{Single-field imaging and deconvolution}
+
+\subsection{In a nutshell}
+
+\begin{verbatim}
+  1  read uv YourData
+  2  uv_map
+  3  clean
+  4  view clean
+  5  write * YourResult
+\end{verbatim}
+\begin{enumerate}\itemsep 0pt
+\item Read your \uv{} data
+\item Image 
+\item Deconvolve
+\item see the result
+\item Save the result if OK.
+\end{enumerate}
+You are done. And this is often good. However, it may take a while, and
+the angular resolution and/or the brightness sensitivity may not be optimal.
+So, it may be worth for you to read the information below and adjust
+the control variables of \com{UV\_MAP} 
+
+\subsection{Measurement equation and other definitions}
+
+The measurement equation of an instrument is the relationship between the
+sky intensity and the measured quantities. The measurement equation for a
+millimeter interferometer is to a good approximation (after calibration)
+\begin{equation}
+  V(u,v) = \mbox{FT}\cbrace{B_\emr{primary}.I_\emr{source}}(u,v)+N
+\end{equation}
+where $\mbox{FT}\cbrace{F}(u,v)$ is the bi-dimensional Fourier transform of
+the function $F$ taken at the spatial frequency $(u,v)$, $I_\emr{source}$
+the sky intensity distribution, $B_\emr{primary}$ the primary beam of the
+interferometer (almost a Gaussian whose FWHM is the natural resolution of the
+single-dish antenna composing the interferometer), $N$ some thermal noise
+and $V(u,v)$ the calibrated visibility at the spatial frequency $(u,v)$.
+This measurement equation implies different kinds of problems.
+\begin{enumerate}
+\item The presence of noise leads to sensitivity problems.
+\item The presence of the Fourier transform implies that visibilities
+  belongs to the Fourier space while most (radio)astronomers are used to
+  interpret images. A step of \emph{imaging} is thus required to go
+  from the \uv{} plane to the image plane.
+\item The multiplication of the sky intensity by the primary beam implies a
+  distortion of the information about the intensity distribution of the
+  source.
+\item Finally, the main problem implied by this measurement equation is
+  certainly the irregular, limited sampling of the \uv{} plane because it
+  implies that the information about the source intensity distribution is
+  incomplete.
+\end{enumerate}
+Deconvolution techniques are needed to overcome the incomplete
+sampling of the \uv{} plane. To show how this can be done, we need additional definitions
+\begin{itemize}
+\item Let us call $V = \mbox{FT}\cbrace{B_\emr{primary}.I_\emr{source}}$ the
+  continuous visibility function.
+\item The sampling function $S$ is defined as
+  \begin{itemize}
+  \item $S(u,v) = 1/\sigma^2$ at $(u,v)$ spatial frequencies where
+    visibilities are measured by the interferometer. $\sigma{}$ is the rms
+    noise predicted from the system temperature, antenna efficiency,
+    integration time and bandwidth. The sampling function thus contains
+    information on the relative weights of each visibility.
+  \item $S(u,v) = 0$ elsewhere.
+  \end{itemize}
+\item We finally call $B_\emr{dirty} = \mbox{FT}^{-1} \cbrace{S}$ the dirty
+  beam.
+\end{itemize}
+If we forget about the noise, we can thus rewrite the measurement equation
+as
+\begin{equation}
+  I_\emr{dirty} = \mbox{FT}^{-1} \cbrace{S.V}.
+\end{equation}
+Using the property \#1 of the Fourier transform (see Appendix), we obtain
+\begin{equation}
+  I_\emr{dirty} = B_\emr{dirty} \ast \cbrace{B_\emr{primary}.I_\emr{source}},
+\end{equation}
+where $\ast$ is the convolution symbol. Thus, the incompleteness of the
+\uv{} sampling translates into the image plane as a convolution by the dirty
+beam, implying the need of deconvolution. From the last equation, it is
+easy to show that the dirty beam is the point spread function of the
+interferometer, \ie\ its response at a point source. Indeed, for a point
+source at the phase center, $\cbrace{B_\emr{primary}.I_\emr{source}} =
+I_\emr{point}$ at the phase center and 0 elsewhere and the convolution with
+a point source is equal to the simple product: $I_\emr{dirty} =
+B_\emr{dirty}.I_\emr{point} = B_\emr{dirty}$ for a point source of
+intensity $I_\emr{point} = 1$~Jy.
+
+We note that Fourier transform are in general done through Fast Fourier 
+Transform, which implies first a stage of re-interpolation of the 
+visibilities on a regular grid in the \uv{} plane, a process called 
+\textit{gridding}. This gridding step introduces a convolution in the 
+\uv{} space, and thus a multiplication by the Fourier transform of the 
+gridding function in the image plane, which needs to be corrected
+later by division by this Fourier transform. It can be shown that despite this 
+step, the convolution property mentionned before still holds.
+ 
+\subsection{Imaging}
+
+The process known as {\it imaging} consists in computing the dirty image
+and the dirty beam from the measured visibilities and the sampling
+function. 
+
+\subsubsection{Image size and pixel size}
+
+
+\paragraph{Link between image size and \uv{} cell size}
+
+The gridding stage requires at least Nyquist sampling of the \uv{} 
+plane to avoid the artifact known as aliasing. This sampling
+depends on the source size. 
+
+For the signal, the source size is limited by the primary beam, so that the 
+Nyquist sampling in the \uv{} plane is obtained with a size of the grid 
+cells equals to half the size of the antenna diameter. (this is the 
+smallest spatial frequency that the interferometer can be sensitive to, 
+\ie\ the natural resolution in the \uv{} plane). In the image plane, 
+this implies to make an image at least twice as large as the primary 
+beam size (see Fourier transform property \#2 in Appendix). 
+
+Unfortunately, the spatial frequencies of the noise are not
+bound:  the noise increases at the edges of the produced image 
+because of the noise aliasing and gridding correction.
+
+Unless you have good reasons (such as a strong confusion source close
+to the primary beam), you should not choose too large an image size,
+since that would slow down imaging and deconvolution.
+
+\paragraph{Link between pixel size and largest \uv{} spatial frequency}
+
+The largest sampled spatial frequency is directly linked to the synthesized
+beam size (\ie\ the interferometer spatial resolution). The pixel size must
+be at least 1/2 the synthesized beam size to ensure Nyquist sampling in the
+image plane. However, Nyquist sampling is enough only when dealing with
+linear processes while deconvolution techniques are non-linear.  It
+is thus recommended to select a pixel size between 1/3 and 1/4 of the synthesized
+beam to ease the deconvolution. Smaller pixel sizes would lead
+to larger images, and unduly slow down the imaging and deconvolution process.
+
+\subsubsection{Weighting and Tapering}
+
+The use of the visibility weights $(1/\sigma^2)$ in the definition of the
+sampling function is called natural weighting as it is natural to weight
+each visibility by the inverse of noise variance. Natural weighting is also
+the way to maximize the point source sensitivity in the final image.
+However, the exact scaling of the sampling function is an additional degree
+of freedom in the imaging process. In particular, the user may change this
+scaling to give more or less weight to the long or short spatial frequencies.
+
+We can thus introduce a weighting function $W(u,v)$ in the definitions of
+$B_\emr{dirty}$ and $I_\emr{dirty}$
+\begin{equation}
+  B_\emr{dirty} = \mbox{FT}^{-1} \cbrace{W.S}
+\end{equation}
+and
+\begin{equation}
+  I_\emr{dirty} = \mbox{FT}^{-1} \cbrace{W.S.V}.
+\end{equation}
+There are two main categories of weighting functions
+\begin{description}
+\item[Robust weighting] In this case, $W$ is computed to enhance the
+  contribution of the large spatial frequencies. This is done by first
+  computing the natural weight in each cell of the \uv{} plane. Then $W$ is
+  derived so that
+  \begin{itemize}
+  \item The product $W.S$ in a \uv{} cell is set to a constant if the
+    natural weight is larger that a given threshold;
+  \item $W = 1$ (\ie{} natural weighting) otherwise.
+  \end{itemize}
+  This decreases the weight of the well measured \uv{} cells (\ie{} very
+  low noise cells) while it keeps natural weighting of the noisy cells.  It
+  happens that the cells of the outer \uv{} plane (corresponding to the
+  large interferometer configurations) are often noisier than the cells of
+  the inner \uv{} plane (just because there are less cells in the inner
+  \uv{} plane). Robust weighting thus increases the spatial resolution by
+  emphasizing the large spatial frequencies at moderate cost in sensitivity 
+  for point sources (but with a larger loss for extended sources, see below).
+\item[Tapering] is the apodization of the \uv{} coverage by simple
+  multiplication by a Gaussian
+  \begin{equation}
+    W = \exp\cbrace{-\frac{\paren{u^2+v^2}}{t^2}},
+  \end{equation}
+  where $t$ is the tapering distance. This multiplication in the \uv{}
+  plane translates into a convolution by a Gaussian in the image plane,
+  \ie\ a smoothing of the result. The only purpose of this is to increase
+  the sensitivity to extended structure. Tapering should never be
+  used \textbf{alone} as this somehow implies that you throw away large spatial
+  frequencies measured by the interferometer. It is only a way to extract
+  the most information from the given data set. If you need more sensitivity
+  to extended structures, use compact configuration of the arrays 
+  rather than extended configurations and tapering.
+\end{description}
+For more details on the whole imaging process the interested reader is
+referred to \cite{guilloteau00}.
+
+\subsubsection{Implementation (\comm{READ}{UV}, \com{UV\_MAP} and \com{UV\_STAT})}
+
+In \imager{}, gridding in the \uv{} plane and computation of the dirty
+beam and image are coded in the \com{UV\_MAP} command. This command works
+on an internal buffer containing the \uv{} table read from a file through
+the \comm{READ}{UV} command. 
+
+The \com{UV\_MAP} command is controlled by a set of SIC variables named 
+with the prefix \texttt{MAP\_}. Suitable defaults are provided, so that 
+only specific cases should require customization by the user. A 
+description of the all variables can be obtained through \texttt{HELP UV\_MAP}.
+\comm{UV\_MAP}{?} also gives their default and current values.
+
+\begin{description}
+\item[Basic usage - image characterization] \mbox{}
+\begin{tabbing}
+\hspace{0.0cm} \= \hspace{3.4cm} \= \hspace{2.cm} \= \kill
+\> Name \> Dim/Type \> Description \\
+%\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+\> \sicvar{MAP\_CELL}    \> [2] Real \> Pixel size in arcsecond. Enter 0,0 to let the task find the best values. \\
+\> \sicvar{MAP\_FIELD}  \>[2] Real \> Image size in arcsecond.  \sicvar{MAP\_FIELD} has precedence over \\
+                \> \> \> the number of pixels \sicvar{MAP\_SIZE} to define the  actual map size \\
+                \> \> \> when both variables are non-zero. \\
+\> \sicvar{MAP\_SIZE}   \> [2] Int  \>   Image size in pixels \\
+\> \sicvar{MAP\_POWER}   \> Int \> Rounding scheme for default image size, to numbers like $2^{n}3^{p} 5^{q}$. \\
+		  \> \> \> $p$ and $q$ are less than or equal to \sicvar{MAP\_POWER}. \\
+                \> \> \> Default value is 2, for smallest image size. For \sicvar{MAP\_POWER} = 0 
+                \sicvar{MAP\_SIZE} is just a power of 2. \\
+\> \sicvar{MAP\_ROUNDING} \> Real \> Maximum  error  between optimal size (\sicvar{MAP\_FIELD} / \sicvar{MAP\_CELL}) 
+        and rounded (as a power of $2^k 3^p 5^q$) \sicvar{MAP\_SIZE}. \\
+\> \sicvar{MAP\_CENTER}  \> Char.  \>  A character string to specify the new Map center and the new map\\
+                \> \>  \> orientation, see the next subsection related to the definition of the \\
+                \> \> \> projection center of the image. \\
+%\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+\end{tabbing}
+\end{description}
+
+\begin{description}
+\item[Weighting]:\mbox{}
+\begin{tabbing}
+\hspace{0.cm} \= \hspace{3.4cm} \= \hspace{2cm} \= \kill
+
+%\> MAP\_WEIGHT \> Weighting mode: natural (optimum in  terms  of  sensitivity)  or  \\
+%                \> \> robust (usually  lower sidelobes and higher spatial resolution) weighting. \\
+%                \> \> Usage: e.g., LET MAP\_WEIGHT NATURAL.\\
+\> \sicvar{MAP\_ROBUST}  \>  Real \> Robust weighting factor, in range 0 - $+ \infty$. \\ 
+	      \>  \>  \> 0 means  Natural weighting (as $+ \infty$, actually).\\ 
+	      \> \> \> 0.5 or 1 is usually a good choice for Robust Weighting. \\
+	      \>  \> \> Default is 0,i.e. natural weighting. (Old name \sicvar{UV\_CELL[1]}) \\
+\> \sicvar{MAP\_UVTAPER} \> [3] Real \>  Array of 3 values controlling the UV taper: major/minor axis \\
+                \> \> \> at 1/e level [m,m] (first two values), and position angle ([${\deg}$], third value). \\
+                \> \> \> By default (0,0,0). (Old name \sicvar{UV\_TAPER[3]}). \\
+\> \sicvar{MAP\_UVCELL}  \> [2] Real \>  UV Cell size for Robust weighting. Default is 0, meaning that  \\
+              \> \> \> the cell size is derived from the antenna diameter. \\
+                \> \> \> (Old name \sicvar{UV\_CELL[2]}) \\
+\> \sicvar{MAP\_TAPEREXPO} \> Real \>  the taper exponent. Default 2, indicating Gaussian function. \\
+                \> \> \> (Old name \sicvar{TAPER\_EXPO}). \\
+%\hspace{0.0cm} \= \hspace{4.2cm} \= \kill
+\end{tabbing}
+\end{description}
+
+\begin{description}
+\item[Advanced]\mbox{}
+\begin{tabbing}
+\hspace{0.0cm} \= \hspace{3.4cm} \= \hspace{2cm} \= \kill
+
+\> \sicvar{MAP\_BEAM\_STEP} \> Int \> Number of channels per common dirty beam, if $> 0$. \\
+                \> \> \> If 0 (default value),  only one beam is produced in total. \\
+                \> \> \> If $-1$, an automatic guess is performed from the map size and \\
+                \> \> \> requested precision (\sicvar{MAP\_PRECIS}). \\
+\> \sicvar{MAP\_PRECIS}  \> Real \> Position precision at the map edge, in fraction of pixel size, \\
+                \> \> \> used (with the actual image size) to  derive  the  actual number of \\
+                \> \> \> channels which can share the same beam.  Default value is 0.1. \\
+\> \sicvar{MAP\_TRUNCATE} \>  Real \> For a Mosaic, truncate the primary beam to the specified level\\
+              \> \> \> (in fraction). Default value is 0.2.\\
+%\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+\end{tabbing}
+\end{description}
+
+\begin{description}
+\item[Debug]\mbox{}
+\begin{tabbing}
+\hspace{0.0cm} \= \hspace{4.cm} \= \hspace{1.4cm} \= \kill
+\> \sicvar{MAP\_CONVOLUTION}  \> Int \>  Gridding convolution mode in the $uv$ plane. \\
+		\> \> \> (default 5 for speroidal functions) (old name \sicvar{CONVOLUTION}) \\
+\> \sicvar{MAP\_VERSION} \> Int \>  Version of code to be used. This is a temporary variable to allow \\
+                \> \> \>  comparison between the new and old codes without quitting \\
+                \> \> \> \imager{}. \\
+\end{tabbing}
+\end{description}
+
+
+% The following variables are obsolescent or obsolete:
+%\> MAP\_SHIFT    \>  Logical indicating whether the phase center must be shifted and/or \\
+%                \> \> the image rotated (old name UV\_SHIFT). \\
+% \> MAP\_ANGLE \>  Position angle of map axis when MAP\_SHIFT is set \\
+% \> MAP\_RA      \>   Right ascension of new map center \\
+% \> MAP\_DEC     \> Declination of new map center  \\
+%\end{tabbing}
+
+%In addition, the SIC variable WCOL indicates the weight channel, and the variable MCOL (a 2 dimension integer) specifies the channel range to be imaged. However, WCOL should in general be set to zero to allow the beam steps to be set. %(EDF: beam steps ??)
+
+Parameters can be listed by the commands ''UV\_MAP ?''  and ''CLEAN ?''.
+A thorough description of each parameter can be obtained by typing: ''help UV\_MAP MAP\_*'' or ''help CLEAN CLEAN\_*''
+
+\begin{verbatim}
+IMAGER> UV_MAP ?
+ UV_MAP makes a dirty image and a dirty beam from the UV data
+ 
+* Variable MAP_CENTER controls shifting ang rotation
+* MAP_CELL[2], MAP_SIZE[2], MAP_FIELD[2] control the map sampling
+* MAP_UVTAPER[3], MAP_UVCELL and MAP_ROBUST
+     control the beam shape and weighting scheme
+* MAP_BEAM_STEP and MAP_PRECIS control the dirty beam precision
+ 
+  Map Size (pixels)                 MAP_SIZE        [0 0]
+  Field of view (arcsec)            MAP_FIELD       [0 0]
+  Pixel size (arcsec)               MAP_CELL        [0 0] 
+  Map center                        MAP_CENTER      [ ]      
+  Robust weighting parameter        MAP_ROBUST      [0]
+  UV cell size (meter)              MAP_UVCELL      [7.5]   
+  UV Taper (m,m,deg)                MAP_UVTAPER     [0 0 0] MAP_TAPEREXPO [2] 
+  Channels per single beam          MAP_BEAM_STEP   [0]
+  Tolerance at map edge (pixels)    MAP_PRECIS      [0.1]
+  Rounding method                   MAP_POWER       [2]     MAP_ROUNDING [0.05] 
+  Gridding Convolution method       MAP_CONVOLUTION [5]
+\end{verbatim}
+
+%\begin{verbatim}
+%IMAGER> help UV_MAP MAP_beam_step  
+%UV_MAP MAP_BEAM_STEP
+% 
+%      MAP_BEAM_STEP   Integer
+% 
+%    Number of channels per synthesized beam plane.
+% 
+%    Default  is 0, meaning only 1 beam plane for all channels.  N (>0) indi-
+%    cates N consecutive channels will share the same dirty beam.
+% 
+%    A value of -1 can be used to compute the number  of  channels  per  beam
+%    plane  to ensure the angular scale does not deviate more than a fraction
+%    of the map cell at the map edge. This fraction is controlled by variable
+%    MAP_PRECIS (default 0.1)
+%\end{verbatim}
+
+\subsubsection{Defining the Projection Center of the image}
+
+The command \com{UV\_MAP} handles phase tracking center through its arguments, 
+or through the string variable \sicvar{MAP\_CENTER}.
+
+\begin{verbatim}
+UV_MAP [CenterX CenterY UNIT  [Angle]]  [/FIELDS  FieldList]  [/TRUNCATE Percent]
+\end{verbatim}
+    
+%The old command UV\_SHIFT was introduced to phase shift Mosaics to a
+%common phase center in a Mosaic. It also works for single fields if needed,
+%but this command is deprecated as the mechanism should be modified
+%for large field mosaics.
+%
+%The old code can still be executed by first setting MAP\_VERSION = -1. 
+%MAP\_VERSION set to 0 (the default) uses the new code, and MAP\_VERSION = 1 allows access to an intermediate version. For phase center shifting, the old code still requires the use of the
+%variables MAP\_RA, MAP\_DEC, MAP\_ANGLE and UV\_SHIFT.
+%(EDF: clarify whether MAP\_SHIFT variable can be used or not , and in which version of the code -- it exists in version 0, although declared as obsolescent, but MAP\_RA and MAP\_DEC are not described in the help)
+
+
+
+%The \com{UV\_MAP} behavior is controlled
+%through the following sic variables
+%\begin{description}
+%\item[Gridding kernel] \mbox{}
+%  \begin{description}
+%  \item[\texttt{CONVOLUTION}] Gridding in the \uv{} plane is done through
+%    convolution and this variable is the kind of convolution kernel.
+%    Default is 5, meaning spheroidal functions. Unless you are a real
+%    expert, you should never change the value of this variable: Spheroidal
+%    functions are the right answer.
+%  \end{description}
+%\item[Data cube setup] \mbox{}
+%  \begin{description}
+%  \item[\texttt{WCOL}] Number of the used weight column. The default is to
+%    compute only one dirty beam for the whole data cube. This default may
+%    be incorrect when adding data obtain at different rest frequencies.
+%    % *** we should implement the ONEBEAM variable! JP ***
+%  \item[\texttt{MCOL}] First and last velocity/frequency channels to map
+%    (default value is 0 meaning all the channels).
+%  \item[\texttt{MAP\_CELL}] Pixel size in arcsec. Default is 0, meaning
+%    between 1/3 and 1/4 of the synthesized beam.
+%  \item[\texttt{MAP\_SIZE}] Map size in pixel. Default is 0, meaning a
+%    power of two which gives about twice the size of the primary beam size.
+%    For efficiency of FFT, it is better to pick a power of two.
+%  \item[\texttt{MAP\_RA}] Right Ascension of the phase center. Default is
+%    an empty string, meaning do not change the right ascension.
+%  \item[\texttt{MAP\_DEC}] Declination of the phase center. Default is an
+%    empty string, meaning do not change the declination.
+%  \item[\texttt{MAP\_ANGLE}] Map position angle in degree. Default is 0,
+%    meaning do not rotate the map.
+%  \item[\texttt{UV\_SHIFT}] Logical which toggle the change of phase center
+%    and position angle. This may be used to align the map axes with a
+%    feature of interest of the source, by rotation of the \uv{}
+%    coordinates.
+%  \end{description}
+%\item[Weighting] \mbox{}
+%  \begin{description}
+%  \item[\texttt{WEIGHT\_MODE}] Kind of weighting. Possibilities are
+%    \texttt{NATURAL} or \texttt{UN} (which stands for \texttt{ROBUST}...).
+%    Default is \texttt{NATURAL} weighting to maximize the point source
+%    sensitivity.
+%  \item[\texttt{UV\_CELL}] Size of the \uv{} plane cell and threshold of
+%    the robust weighting. Default are 7.5~m (half the diameter of the
+%    \NOEMA{} antenna) and 1.
+%  \end{description}
+%\item[Tapering] \mbox{}
+%  \begin{description}
+%  \item[\texttt{UV\_TAPER}] Properties of the Gaussian used to apodize the
+%    weights of the \uv{} visibilities (minor and major axes in meters and
+%    position angle in degree). Default is 0, meaning no tapering.
+%  \item[\texttt{TAPER\_EXPO}] *** ? JP *** Default is 0, meaning the use of
+%    a Gaussian as tapering function.
+%  \end{description}
+%\end{description}
+%The current values of all those parameters may be found through the
+%\comm{INPUT}{UV\_MAP} command. The main difficulty in the use of the robust
+%weighting and tapering is the choice of the right parameters for
+%respectively \texttt{UV\_CELL[2]} and \texttt{UV\_TAPER}. \imager{} offers
+%the \com{UV\_STAT} command to guide your choice.
+%\begin{verbatim}
+%       1 IMAGER> read uv demo.uvt
+%       2 IMAGER> uv_stat weight
+%       3 Robust      Major    Minor     PA            Noise      Sidelobe    
+%       4               (")      (")     (deg)    (mJy)     (K)       %      
+%       5    0.10      0.780    0.479     19.8     0.988    0.066  -21.1  18.3
+%       6    0.18      0.784    0.485     19.5     0.889    0.058  -20.9  19.2
+%       7    0.32      0.785    0.493     19.3     0.798    0.051  -20.4  20.2
+%       8    0.56      0.786    0.503     19.3     0.723    0.045  -19.7  21.5
+%       9    1.00      0.784    0.509     19.4     0.672    0.042  -19.3  23.8
+%      10    1.78      0.789    0.507     18.3     0.632    0.039  -19.2  26.3
+%      11    3.16      0.820    0.505     14.8     0.601    0.036  -16.0  30.2
+%      12    5.62      0.828    0.525     13.1     0.586    0.033  -13.0  32.3
+%      13   10.00      0.851    0.539     13.2     0.577    0.031  -11.9  34.2
+%      14   None       0.882    0.559     13.2     0.568    0.029  -10.4  38.2
+%      15 IMAGER> uv_stat taper
+%      16 Taper       Major    Minor     PA            Noise      Sidelobe    
+%      17  (m)          (")      (")     (deg)    (mJy)     (K)       %      
+%      18   30.00      6.586    3.533     10.6     1.727    0.002  -58.8  26.5
+%      19   42.43      5.724    2.896     11.7     1.385    0.002  -36.8  25.8
+%      20   60.00      5.100    2.485     12.8     1.178    0.002  -31.4  24.5
+%      21   84.85      4.623    2.279     13.2     1.035    0.002  -28.8  22.6
+%      22  120.00      3.956    2.058     13.2     0.895    0.003  -26.5  23.4
+%      23  169.71      2.173    1.565     21.8     0.752    0.005  -23.1  27.8
+%      24  240.00      1.161    1.072    161.1     0.646    0.013  -19.8  32.4
+%      25  339.41      0.962    0.756     11.9     0.594    0.020  -17.5  35.1
+%      26  480.00      0.910    0.645     13.2     0.576    0.024  -16.1  36.8
+%\end{verbatim}
+%Comments:
+%\begin{description}
+%\item[Line 1] Read a \uv{} table in an internal buffer as the
+%  \com{UV\_STAT} works only on this buffer.
+%\item[Lines 2-14] Displays the synthesized beam (major, minor, position
+%  angle), the noise levels (point source in mJy and brightness in K) and
+%  the level of the sidelobes as a function of the threshold (1st column) to
+%  be used in the robust weighting method. The usual way to choose the right
+%  threshold is to select the one that gives a substantially better spatial
+%  resolution without increasing the noise by more than 10\%.
+%\item[Lines 15-26] Displays the same parameters as above as a function of
+%  the tapering distance (1st column) in meter.
+%\end{description}
+
+\subsubsection{Typical imaging session}
+
+\begin{verbatim}
+       1 read uv gag_demo:demo-single
+       2 uv_map ?
+       3 uv_stat weight
+       4 let map_robust 0.5
+       5 uv_map ?
+       6 uv_map
+       7 show beam
+       8 show dirty
+       9 let map_size 128
+      10 uv_map
+      11 show beam
+      12 show dirty
+      13 hardcopy demo-dirty /dev eps
+      14 write dirty demo
+      15 write beam demo
+\end{verbatim}
+Comments:
+\begin{description}\itemsep 0pt
+  \item[Step 1] Read the \texttt{demo.uvt} \uv{} table in an internal buffer.
+  \item[Step 2] Check current state of the variables that control the 
+  imaging.
+  \item[Steps 3-5] Select the robust weighting threshold (step 4) from 
+  the result of the \com{UV\_STAT} command (step 3) and recheck the 
+  current state of the variables that control the imaging (step 5).
+  \item[Steps 6-8] Image and plot the dirty beam and image.
+  \item[Steps 9-12] Try a smaller size of the map as the default imaged 
+  field-of-view looked too large from previous plots.
+  \item[Steps 13] Make a Post-Script file from the dirty image.
+  \item[Steps 14-15] Write dirty image and beam in \texttt{demo.lmv} 
+  and \texttt{demo.beam} files for deconvolution in a future \imager{} 
+  session. These steps are optional as you may directly proceed to the 
+  deconvolution stage without writing the files.
+\end{description}
+
+\subsection{Deconvolution}
+
+\subsubsection{Principle}
+
+Once the dirty beam and the dirty image have been calculated, we want to
+derive an astronomically meaningful result, ideally the sky brightness.
+However, it is extremely difficult to recover the intrinsic brightness
+distribution with an interferometer. Mathematically, the
+incomplete sampling of the \uv{} plane implies that there is an infinite
+number of intensity distributions which are compatible with the constraints
+given by the measured visibilities.  Fortunately, physics allow us to
+select some solutions from the infinite number that mathematics authorize.
+The goal of deconvolution is thus to find a sensible intensity distribution
+compatible with the measured visibilities. To reach this goal,
+deconvolution needs 1) some \emph{a priori}, physically valid, assumptions
+about the source intensity distribution and 2) as much knowledge as
+possible about the dirty beam and the noise properties (in radioastronomy,
+both are well known). The best solution would obviously be to avoid
+deconvolution, \ie\ to get a Gaussian dirty beam. For instance, the design
+of the compact configuration of \ALMA{} has been thought with this goal in
+mind. However, this goal is out of reach for today's millimeter
+interferometers, even \ALMA{}.
+
+The simplest \emph{a priori} knowledge that the user can feed to
+deconvolution algorithm is a rough idea of the emitting region in the
+source.  The user defines a support inside which the signal is to be found
+while the outside is only made of sidelobes. The definition of a support
+considerably helps the convergence of deconvolution algorithms because it
+decreases the complexity of the problem (\ie\ the size of the space to be
+searched for solutions). However, it can introduce important biases in the
+final solution if the support excludes part of the sky region that is really
+emitting. Support must be thus used with caution.
+
+\subsection{The family of \clean{} algorithms (\com{HOGBOM}, \com{CLARK},
+  \com{MX}, \com{SDI}, \com{MRC}, \com{MULTI})}
+
+Radio astronomy interferometry made a significant step forward with the
+introduction of a robust deconvolution algorithm, known as \clean{}, by
+\cite{hogbom74}.
+
+\subsubsection{\clean{} ideas}
+
+The family of \clean{} algorithms is based on the \emph{a priori}
+assumption that the sky intensity distribution is a collection of point
+sources. The algorithms have three main steps
+\begin{description}
+\item[Initialization] \mbox{}
+  \begin{itemize}
+  \item of the residual map to the dirty map;
+  \item and of the clean component list to a \texttt{NULL} (\ie\ zero)
+    value.
+  \end{itemize}
+\item[Iterative search] for point sources on the residual map. As those
+  point sources are found,
+  \begin{itemize}
+  \item they are subtracted from the residual map;
+  \item and then they are logged in the clean component list.
+  \end{itemize}
+\item[Restoration] of the clean map 1) by convolution of the clean
+  component list with the clean beam, \ie\ a Gaussian whose size matches
+  the synthesized beam size and 2) by addition of the residual map.
+\end{description}
+
+\paragraph{Stopping criteria}
+
+Several criteria may be used to stop the iterative search of this
+``matching pursuit'':
+\begin{enumerate}
+\item When the maximum of the absolute value of the residual map is lower
+  than a fraction of the noise. This stopping criterion is adapted to
+  \emph{noise limited situations}, \ie\ when empirical measures of the
+  noise in the cleaned image give a value similar to the noise value
+  estimated from the system temperatures.
+\item When the maximum of the absolute value of the residual map is lower
+  than a fraction of the maximum intensity of the original dirty map.  This
+  stopping criterion is adapted to \emph{dynamic limited situations}, \ie\ 
+  when some part of the source is so intense that the associated side lobes
+  are larger than the thermal noise. In this case, any empirical measure of
+  the noise in the cleaned image will give a value larger than the noise
+  value estimated from the system temperatures.
+\item The total number of clean components. This is a sanity criterium in
+  case the other ones would be badly tuned.
+\item When the total flux remains stable.
+\end{enumerate}
+Choosing the good stopping criterion is important because the deconvolution
+must go deep enough to be correct but \clean{} algorithms start to diverge
+when the noise is cleaned too deep. Criterium 4 is thus in general
+preferable, but may lead to insufficient cleaning when the dirty beam
+is poor (by lack of \uv{} coverage and/or because of phase noise). 
+If (\# 4) fails, a good compromise is to clean down to or
+slightly below (typically $0.5\sigma$) the noise level.
+
+\paragraph{Stability criterion}
+
+Clean convergence is controlled by the usual \sicvar{ARES} (\#1) , \sicvar{FRES} (\#2) 
+and \sicvar{NITER} (\#3) criteria,
+plus \sicvar{CLEAN\_NCYCLE} for methods with major cycles. However, these criteria
+can be set to 0, allowing \imager{} to automatically guess when to stop
+using criterium \#4.
+In this case, convergence is controlled by \sicvar{CLEAN\_NKEEP}, which is 
+a number of components. Deconvolution of a given channel stops if
+the cumulative flux at iteration number $N$ is smaller (resp. larger) than at iteration
+$N-$\texttt{CLEAN\_NKEEP} for positive signals (resp. negative). In essence, \sicvar{CLEAN\_NKEEP}
+is the number of components when only noise is present. Experimentation
+with various types of images has shown that \sicvar{CLEAN\_KEEP}$ = 70$ is
+a good compromise. 
+
+\paragraph{Formation of the \clean{} map}
+
+The clean component list may be searched on an arbitrarily fine spatial
+grid without too much physical sense as the interferometer has a finite
+spatial resolution.  The convolution by the clean beam thus reintroduces the
+finite resolution of the observation, an information which is missing from the
+list of clean component alone. This step is often called \emph{a
+  posteriori} regularization.
+
+The shape (principally its size) of the clean beam used in the restoration
+step plays an important role. The clean beam is usually a fit of the main
+lobe (\ie\ the inner part) of the dirty beam. This ensures that 1) the flux
+density 
+estimation\footnote{Some odd dirty beams may lead to incorrect flux measurements. For example,
+if the dirty beam has a very narrow central peak superimposed on a rather broad
+plateau, the volume of the Gaussian fitted to the central peak does
+not match that of the dirty beam, and the flux scale will be incorrect.
+Data-reweighting is required to cure these peculiar situations.}
+  will be correct and 2) the addition of the residual map
+to the convolved list of clean component makes sense (\ie\ the unit of the
+clean and residual maps approximately matches). 
+
+The final addition of the residual map plays a double role. First, it is a
+first order correction to insufficient deconvolution. Second, it enables
+noise estimate on the cleaned image since the residual image should be
+essentially noise when the deconvolution has converged.
+
+Super-resolution is the fact of restoring
+with a clean beam size smaller that the fit of the main lobe of the dirty
+beam. The underlying idea is to get a bit finer spatial resolution.
+However, it is a bad practice because it breaks the flux estimation and the
+usefulness of the addition of the residual maps. It is better to use robust
+weighting to emphasize the largest measured spatial frequencies.
+
+
+
+\subsubsection{Basic \clean{} algorithms (\com{HOGBOM}, \com{CLARK} and \com{MX})}
+
+The main difference between the different basic \clean{} algorithms is the
+strategy for searching the point sources.
+
+\paragraph{\com{HOGBOM}}
+
+The simplest strategy of the iterative search was introduced by
+\cite{hogbom74}. It works as follows
+\begin{enumerate}
+\item Localization of the strongest intensity pixel in the current residual
+  map: $\emr{max}(\abs{I_\emr{res}})$.
+\item Add $\gamma.\emr{max}(\abs{I_\emr{res}})$ and its spatial position to
+  the clean component list.
+\item Convolution of $\gamma.\emr{max}(\abs{I_\emr{res}})$ by the dirty
+  beam.
+\item Subtract the resulting convolution from the residual map in order to
+  clean out the side lobes associated to the localized clean component.
+\end{enumerate}
+$\gamma$ is the loop gain. It controls the convergence of the method. In
+theory, $ 0 < \gamma < 2$. $ \gamma =1$ would in principle give
+faster convergence, since the remaining flux at one position is $ \propto
+(1-\gamma)^{n_{\mathrm{comp}}}$, where $n_\mathrm{comp}$ is the number of
+clean components found at this position. But, in practice, one should use $
+\gamma \simeq 0.1 - 0.2$, depending on sidelobe levels, source structure
+and dynamic range.  Indeed, deviations (such as thermal noise, phase noise
+or calibration errors) from an ideal convolution equation force to use low
+gain values in order to avoid non linear amplifications of errors.
+
+An important property of \com{HOGBOM} algorithm is that only the inner
+quarter of the dirty image can be properly cleaned when dirty beam and
+images are computed on the same spatial grid. Indeed, the subtraction of
+the dirty sidelobes associated to any clean component is possible only in
+the spatial extent of the dirty beam image. When the user defines a support
+(\emph{a priori} knowledge), the cleaned region becomes even smaller than
+the inner quarter of the dirty map.
+
+\paragraph{\com{CLARK}}
+
+The most popular variant to the \com{HOGBOM} algorithm is due to
+\cite{clark80}. The iterative search for point sources involves minor and
+major cycles.
+\begin{description}
+\item[In minor cycles,] an \com{HOGBOM} search is performed with two
+  limitations: 1) Only the brightest pixels are considered in the above
+  step 1, and 2) the convolution of the found point sources (step 3 above)
+  is done with a spatially truncated dirty beam 
+  \footnote{It is also theoretically possible to do so with an intensity truncated beam.}. 
+  Both limitations fasten
+  the search but may lead to difficult convergence in cases where the
+  secondary side lobes are a large fraction (\eg\ 40\%) of the main side
+  lobe.
+\item[In major cycles,] the clean components found in the last minor cycle
+  are removed in a single step from the residual map in the Fourier plane.
+  The use of the Fourier transform enable to clean slightly more than the
+  inner quarter of the map.
+\end{description}
+\com{CLARK} is faster than \com{HOGBOM}.
+
+\paragraph{\com{MX}}
+
+The \com{MX} (cor Cotton-Schwab, from the names of its authors) 
+algorithm, due to \citet{schwab84}, is a variant of the
+\com{CLARK} algorithm in which the clean components are removed from the
+\uv{} table at each major cycle. This is the most precise way of removing
+the found clean components because it avoids aliasing of the dirty
+sidelobes. A direct consequence is that this method enables to clean the
+largest region of the dirty map. However, this may be a relatively slow
+algorithm because the imaging step must be redone at each major cycle.
+
+In \imager{}, \com{MX} is only implemented for single channel data set.
+
+\subsubsection{Advanced \clean{} algorithms to deal with extended
+  structures (\com{SDI}, \com{MULTI} and \com{MRC})}
+
+When the spatial dynamic of the imaged source is large (\ie\ when the ratio
+of the largest source structure over the synthesized resolution is large),
+the basic \clean{} algorithms may (rarely) turn smooth area of the source
+into a serie of ridges and stripes. Indeed, when the dirty beam pattern is
+subtracted from a smooth feature of the dirty map, the sidelobes patterns
+appear in the residual map. The search for the next clean component will
+then pick first the pixels in the sidelobes pattern amplifying this
+pattern. Several variants of \clean{} have been devised to solve this
+problem.
+
+\paragraph{\com{SDI}}
+
+In the \clean{} variant proposed by \cite{steer84}, extended features
+(instead of point sources) around the current maximum of the residual map
+are selected and removed in a single step. The simplest implementation
+redefines the notion of minor and major cycles of the \com{CLARK}
+algorithm. In the minor cycles, only the selection of the clean components
+is done by including all the pixels in the residual map that rise above a
+contour set at some fraction of the current peak level. In major cycles,
+all those components are removed together in the Fourier plane. The
+\com{SDI} algorithm may be instable if the fraction used for the selection
+of the clean components is badly chosen.
+
+\paragraph{\com{MRC}}
+
+The Multi Resolution Clean \citep[\texttt{MRC},][]{wakker88} is the first
+try to introduce the notion of cleaning at different scales. \com{MRC}
+works on two intermediate maps (strictly speaking \com{MRC} is a
+double--resolution \clean{} algorithm).  The first map is a smoothed
+version of the dirty map and the second map, called difference map, is
+obtain by subtraction of the smoothed map from the original dirty map.
+Since the measurement equation is linear, both maps can be cleaned
+independently (using a smoothed and a difference dirty beam, respectively).
+The underlying idea is that extended sources in the dirty map will look
+like more "point-like" with respect to the smoothed dirty beam in the
+smoothed map. \com{MRC} is faster than the basic \clean{} algorithms
+because fewer clean components are needed to reproduce an extended source
+feature in the smoothed map than in the original map.
+
+\paragraph{\com{MULTI}}
+
+ The Multi-scale \clean\ algorithm (\cite{cornwell0X}) has also been
+ designed to improve the performance of \clean\ for extended sources.  It is
+ a straightforward extension of \clean\ that models the sky brightness by
+ the summation of blobs of emission having different size scales.  It is
+ equivalent to simultaneously deconvolve images obtained with different
+ synthesized beams derived from the highest resolution one by convolution
+ kernels. This algorithms works simultaneously in a range of specified 
+ scales. Multi-scale \clean\ can produce good images with a loop gain 
+ of 0.5 or even higher. 
+ 
+ 
+ The implementation of Multi-scale \clean\ in  \imager{} slightly differs 
+ from that of \casa\ . It is less optimized in terms of speed, but uses
+ a better convergence scheme in which the scale chosen at each iteration
+ is the one with best signal to noise ratio. Accordingly, it is more
+ stable. Only 3 scales are used so far in \imager , with a size ratio
+ controlled by \sicvar{CLEAN\_SMOOTH}.
+
+\subsubsection{Implementation and typical use}
+
+%\subsection{CLEAN} from SG doc
+Deconvolution parameters are controlled by \sicvar{CLEAN\_*} variables.
+Progress has been made on automatic guess for Cleaning parameters.
+The table below presents the current naming scheme, with previous or 
+equivalent names mentioned in parentheses, since these names were 
+(or are still) used by several older packages such as \mapping{}, \aips{} or \casa{}. 
+The equivalent ''old'' names (mentioned in Upper case below) will remain 
+as aliases, while those mentioned in mixed case have disappeared 
+as they were seldom used before. 
+ 
+\begin{tabbing}
+\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+\> \sicvar{CLEAN\_ARES}  \>  Absolute residual  (ARES) \\
+\> \sicvar{CLEAN\_FRES}  \>  Fractional residual (FRES) \\
+\> \sicvar{CLEAN\_GAIN}  \>  Loop gain  (GAIN) \\
+\> \sicvar{CLEAN\_INFLATE} \> Inflation factor allowed to display MultiScale clean components \\
+\> \sicvar{CLEAN\_METHOD} \>  Cleaning Method  (METHOD) \\
+\> \sicvar{CLEAN\_NCYCLE} \>  Maximum number of Major cycles (Nmajor) \\
+\> \sicvar{CLEAN\_NITER} \>  Maximum number of iterations (NITER) \\
+\> \sicvar{CLEAN\_NGOAL} \> A number of components for ALMA joint deconvolution only (Ngoal)\\
+\> \sicvar{CLEAN\_NKEEP} \>  Number of iterations used to check convergence (see below)\\
+\> \sicvar{CLEAN\_POSITIVE} \> Minimum number of positive Clean components \\
+\> \sicvar{CLEAN\_RATIO} \> Ratio for  Dual Resolution clean (Ratio) \\
+\> \sicvar{CLEAN\_RESTORE} \>  Minimum primary beam threshold for restoring  (Restore\_W) \\
+\> \sicvar{CLEAN\_SEARCH} \>  Minimum primary beam threshold for searching (Search\_W) \\
+\> \sicvar{CLEAN\_SMOOTH} \> Smoothing factor for Multi Scale Clean (Smooth) \\
+\> \sicvar{CLEAN\_SPEEDY} \> Speeding factor for Clark (Spexp) \\
+\> \sicvar{CLEAN\_WORRY} \> "Worry" factor for Clark (Worry) \\
+\end{tabbing}
+
+
+\paragraph{Implementation}
+
+In \imager{}, the variants of the \clean{} algorithms discussed above are
+coded as the following commands: \com{HOGBOM}, \com{CLARK}, \com{MX},
+\com{SDI}, \com{MULTI} and \com{MRC}. All those commands work on two
+internal buffers containing the dirty beam and dirty image. Both buffers
+are created directly from \uv{} table through the \com{UV\_MAP} command, or
+they can be loaded from files through the \comm{READ}{BEAM} and
+\comm{READ}{DIRTY} commands. The behavior of those commands is controlled
+through the following common \sic{} variables:
+\begin{description}
+\item[Iterative search] \mbox{}
+  \begin{description}
+  \item[\sicvar{CLEAN\_POSITIVE}] Number of positive clean components to be found
+    before enabling the search for negative components. Default is 0.
+  \item[\sicvar{CLEAN\_GAIN}] Loop gain. Default is 0.2, good compromise between
+    stability and speed.
+  \end{description}
+
+\item[Stopping criteria] \mbox{}
+  \begin{description}
+  \item[\sicvar{CLEAN\_NITER}] Maximum number of clean components. Default is 0.
+  \item[\sicvar{CLEAN\_FRES}] Maximum amplitude of the absolute value of the
+    residual image. This maximum is expressed as a fraction of the peak
+    intensity of the dirty image. Default value is 0.
+  \item[\sicvar{CLEAN\_ARES}] Maximum amplitude of the absolute value of the
+    residual image. This maximum is expressed in the image units (Jy/Beam).
+    Default value is 0.
+    \item[\sicvar{CLEAN\_NKEEP}] Minimum number of Clean components be-
+    fore testing if Cleaning has converged. Default value is 70. 
+  \end{description}
+  
+\item[Support] \mbox{}
+  \begin{description}
+  \item[\sicvar{BLC} and \sicvar{TRC}] Bottom Left Corner and Top Right
+    Corner of a square support in pixel units. Default is 0, meaning using 
+    only the inner quarter if no other support is defined.
+  \item[\com{SUPPORT}] A command that defines the support where
+    to search for clean components. The support can be a Mask, or a
+    Polygon. For a Polygon, the definition can be interactive,
+    using the \greg{}  cursor. This definition can be stored in a file
+    through the \comm{WRITE}{SUPPORT} command and read back in memory from
+    the file with the \com{SUPPORT} command. The polygon support definition is
+    stored in the \sicvar{SUPPORT\%} structure. For a Mask, it can be
+    read by command \comm{READ}{MASK} or computed by command \comm{SUPPORT}{/THRESHOLD},
+    and saved by command \comm{WRITE}{MASK}.
+  \end{description}
+
+\item[Clean beam parameters] \mbox{}
+  \begin{description}
+  \item[\texttt{MAJOR, MINOR} and \texttt{ANGLE}] FWHM size of the major
+    and minor axes (in arcsec) and position angle (in degree) of the
+    Gaussian used to restore the clean image from the clean component list.
+    Default is all parameters at 0, meaning use the fit of the main lobe of
+    the dirty image. Changing the default value of those parameters is
+    dangerous.
+  \end{description}
+\end{description}
+Other variables control specific aspects of a subclass of the \clean{}
+algorithm:
+\begin{description}
+\item[\sicvar{CLEAN\_NCYCLE}] Maximum number of major cycles in all algorithms
+  using this notion (\com{CLARK}, \com{MX}, \com{SDI}). Default is 50.
+\item[\sicvar{BEAM\_PATCH}] Size (in pixel units) of the dirty beam used to
+  deconvolve the residual image in minor cycles. It is used in \com{CLARK} and 
+  \com{MRC} algorithms only. Default value is 0. This is for development only.
+\item[\sicvar{CLEAN\_SMOOTH}] Smoothing factor between different scales in 
+the MULTISCALE methods. Default value is sqrt(3).
+\item[\sicvar{CLEAN\_RATIO}] Smoothing factor between different scales in 
+the MRC method. Default value is 0, for which the code automatically
+derives the best power of 2 adequate for the current problem.
+\end{description}
+
+\subsubsection{Typical deconvolution session}
+
+\begin{verbatim}
+       1 read beam demo
+       2 read dirty demo
+       3 clean ?
+       4 hogbom /flux 0 1
+       5 show residual
+       6 show clean
+       7 write clean demo
+       8 let name demo
+       9 show noise
+      10 let ares 0.5*noise
+      11 clean ?
+      12 hogbom /flux 0 1
+      13 let niter 2000
+      14 clean ?
+      15 hogbom /flux 0 1
+      16 show residual
+      17 show clean
+      18 for iplane 1 to 10
+      19    show clean iplane
+      20    support
+      21    hogbom iplane /flux 0 1
+      22    write support "demo-"'iplane'
+      23 next iplane
+      24 show residual
+      25 view cct
+      26 view clean
+      27 write residual demo
+      28 write clean demo
+      29 write cct demo
+\end{verbatim}
+Comments:
+\begin{description}
+\item[Steps 1-2] Read dirty beam and dirty image from the
+  \texttt{demo.beam} and \texttt{demo.lmv} files. Those steps are not
+  needed if the dirty beam and image are already stored in the internal
+  buffer, \ie\ if you have imaged the \uv{} table just before in the same
+  \imager{} session.
+\item[Steps 3-6] Print the current state of the control parameters,
+  deconvolve the dirty image using the \com{HOGBOM} algorithm (step 3) and
+  look at the results (residual and clean images).  The \texttt{/flux 0 1}
+  option pop-up the visualization of the cumulative flux deconvolved as the
+  clean components are found.
+\item[Steps 8-12] Estimate the empirical noise through the \comm{SHOW}{NOISE}
+  command after this first deconvolution and set the \texttt{ares} stopping
+  criterion accordingly. Check that the new value of \texttt{ares} has been
+  correctly set (step 11) and restart deconvolution.
+\item[Steps 13-17] Increase the number of clean components as the previous
+  deconvolution stopped before the residual image reached the
+  \texttt{ares} value. Restart deconvolution and look at results.
+\item[Steps 18-23] Attempt to improve deconvolution by definition of a
+  support per plane and deconvolve this plane accordingly. The support is
+  stored in a file for further re-use. The deconvolution results are then displayed.
+\item[Steps 24-26] Display the residual images, visualize the cumulative 
+  flux as a function of the clean component number and visualize the clean 
+  spectra cube in an interactive way.
+\item[Steps 27-29] Write residual image, clean image and clean component
+  list in \texttt{demo.lmv-res}, \texttt{demo.lmv-clean} and
+  \texttt{demo.cct} files for later use. 
+\end{description}
+Typical deconvolution session using other \clean{} algorithm would look
+very similar. The main difference would be the possible tuning of other
+control parameters. A deconvolution session using \com{MX} would start
+differently as the imaging and deconvolution are done in the same step:
+\begin{verbatim}
+       1 read uv demo
+       2 mx ?
+       3 mx /flux 0 1
+       4 show residual
+       5 show clean
+       6 write * demo
+%       6 write beam demo
+%       7 write dirty demo
+%       8 write clean demo
+%       9 write residual demo
+%      10 write cct demo
+\end{verbatim}
+Comments:
+\begin{description}
+\item[Step 1] Read the \texttt{demo.uvt} \uv{} table in an internal buffer.
+\item[Step 2] Check current state of the variables that control the
+  imaging and deconvolution.
+\item[Steps 3-5] Deconvolve and look at the results.
+\item[Steps 6-10] Write all the internal buffers on disk files. 
+\end{description}
+All the tuning of the typical imaging and deconvolution sessions could be
+used in this \com{MX} session although they are not repeated here.
+
+\subsection{Practical advices}
+
+\subsubsection{Comparison of deconvolution algorithms}
+
+\com{HOGBOM} is the basic \clean{} algorithm. It is robust but slow.
+\com{CLARK} introduces a faster strategy for the search and removal of
+clean component. However, it can be instable when dirty sidelobes are high.
+\com{MX} cleans the largest region of the dirty map because the source
+removal happens in the \uv{} plane. However, it is slower than \com{CLARK}
+because of the repeated imaging step and it shares some of the \com{CLARK}
+instabilities because it uses the same search strategy.
+
+\com{HOGBOM}, \com{CLARK} and \com{MX} may introduce artifacts as parallel
+stripes in the clean map when dealing with smooth, extended structures.
+\com{SDI}, \com{MRC} and \com{MULTI} introduce (in principle) a better
+handling of those extended sources. \com{SDI} is a rough attempt while
+\com{MRC} and \com{MULTI} introduce the notion of cleaning at different
+spatial scales.
+
+\subsubsection{A few (obvious) practical recommendations}
+\begin{description}
+\item[Map size] Make an image about twice the size of the primary beam (\eg\ 
+  $2\times55''$ at 90~GHz and $2\times22''$ at 230~GHz for \NOEMA{} antenna)
+  to ensure that all the area of the primary beam (inner quarter of the
+  dirty map) will be cleaned whatever the deconvolution algorithm is used.
+  However, avoid making a too large dirty image because the \clean{}
+  algorithms will then try to deconvolve region outside the primary beam
+  area where the noise dominates.
+\item[Support] Start your first deconvolution \emph{without} any support to
+  avoid biasing your clean image. If the source is spatially bound, you
+  can define a support around the source and restart the deconvolution with
+  this \emph{a priori} information. Be careful to check that there is no
+  low signal-to-noise extended structure that could contain a large
+  fraction of the source flux outside your support... Avoid defining a
+  support too close to the natural edges of your source. Indeed,
+  deconvolving noisy regions around your source is advisable because it
+  ensures that you do not bias your deconvolution too much.
+\item[Stopping criterion] Choose the right stopping criterion.\\
+  Use the stability \sicvar{CLEAN\_NKEEP} parameter preferentially, i.e. 
+  keep \sicvar{CLEAN\_ARES}, \sicvar{CLEAN\_FRES} and \sicvar{CLEAN\_NITER}
+  to zero. If it does not work, then
+  \begin{itemize}
+  \item Estimate an empirical noise on your first deconvolved cleaned image
+    with \com{STATISTIC}, \com{CLEAN}, or \comm{SHOW}{NOISE}.
+  \item If this empirical noise value is larger than the value computed from the
+    visibility weights (this noise value is one of the outputs of the
+    \com{UV\_MAP} command), your observation is probably dynamics limited,
+    \ie\ you have a bright source whose dirty sidelobes are much larger
+    that the thermal noise. In this case, set \texttt{ARES} to 0 and
+    \texttt{FRES} to a fraction which depends on the sidelobe level of your
+    dirty beam.
+  \item Else you are in the noise limited case. Set \texttt{FRES} to 0 and
+    \texttt{ARES} to a fraction of the empirical noise value (typically
+    0.5).
+  \end{itemize}
+\item[Convergence checks] Ensure that your deconvolution converged by
+  checking that:
+  \begin{itemize}
+  \item The cumulative flux as a function of the number of clean component
+    has reached a roughly constant level (use \texttt{/FLUX} option of the
+    deconvolution commands to see this curves, or \comm{SHOW}{CCT}).
+  \item The residuals are similar or smaller in the source region (where Clean
+  components were found) compared to elsewhere.
+  \end{itemize}
+  If not, change the values of the stopping criterion, in particular the
+  number of clean components (\sicvar{CLEAN\_NITER}).
+\item[Deconvolution methods] If you want a robust result in all cases,
+  start with \com{HOGBOM}. If you prefer obtaining a quick result, use
+  \com{CLARK} but you then first need to check that the dirty sidelobes are
+  not too large on the dirty beam. If you obtain stripes in your clean
+  image:
+  \begin{itemize}
+  \item First check that your deconvolution converged.
+  \item Then check that there is no spurious visibilities that should 
+   be flagged : use command \com{UV\_FLAG} as a last resort.
+  \item If it is clear that you have an extended source structure, you
+    should first ask yourself whether you are in the wide-field imaging
+    case and act accordingly (see next chapter). Else you can try a
+    \clean{} variant which better deals with cases that implies a large
+    spatial dynamic. This is rare at \NOEMA{}, but may happen with \ALMA .
+  \end{itemize}
+\item[Outside help] Always consult an expert until you become one.
+\end{description}
+

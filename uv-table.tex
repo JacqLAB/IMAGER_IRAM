@@ -1,0 +1,237 @@
+\section{UV Tables}
+
+The main goal of \imager{} is to convert interferometric measurements 
+stored in \uv{} tables into images suitable for astrophysical interpretation. 
+\uv{} tables contain a set of visibilities. \uv{} tables being the
+starting point, \imager{} contains a number of commands to handle
+them.
+
+
+\subsection{\uv{} table description}
+
+\subsubsection{\uv{} table data format}
+
+A \uv{} table is a specific 2-D Gildas table, with a few additional
+informations in the header, and a special interpretation of the data
+organisation.
+
+In a standard \uv{} table, each \textit{line} describes a visibility. 
+Here a \textit{line} designate either the first or second axis of the 
+table, and a \textit{column} the other one. \uv{} tables may appear in 
+both orders. The default one is \textit{line} on 1st axis (\texttt{.uvt} 
+ordering, used by most application). The \texttt{.tuv} ordering 
+obtained by a 21 transposition is used essentially for display, as in 
+this case the \textit{column} as the same meaning as for the 
+\com{COLUMN} of \greg\ .
+
+The number of lines of a \uv{} table is thus the number of visibilities described
+in the table. Each \textit{column} of the table stores a particular property of the
+visibilities, namely:
+\begin{description}\itemsep 0pt
+\item[Column 1] U in meters;
+\item[Column 2] V in meters;
+\item[Column 3] Scan number;
+\item[Column 4] Observation date (integer \class{}/\clic{} Day
+  Number\footnote{The \class{}/\clic{} is a "radio Julian date" (or "Jansky
+    Julian date"), which starts as $-2^{15}$ on the date of the first radio
+    observation by Karl Jansky. It is thus the Modified Julian date minus
+    60549.  That choice was made to maximize the time interval over which
+    radio astronomical data could be usefully stored in an
+    \texttt{integer*2}, back when 2 bytes of header space per spectrum were
+    a significant consideration.  This date has little meaning outside the
+    rather sparse community of souls gathered around the \class{} and
+    \clic{} programs, however...});
+\item[Column 5] Time in seconds since 0:00 UT of above date;
+\item[Column 6] Number of the first antenna used to measure the visibility;
+\item[Column 7] Number of the second antenna used to measure the visibility;
+\item[Column 8] Real part for the first frequency channel;
+\item[Column 9] Imaginary part for the first frequency channel;
+\item[Column 10] Weight for the first frequency channel;
+\item[Columns 11-13] Same as column 8-10 but for the second frequency
+  channel, or for the second Stokes parameter of this channel.
+\item[...] etc\ldots for all channels
+\item[Columns N-ntrail+1 ... N] Trailing columns after the channel visibilities.
+\end{description}
+If a \uv{} table describes \texttt{nvis} visibility spectra composed of
+\texttt{nchan} frequency channels, each with \texttt{nstokes} Stokes parameters,
+the size of the table will thus be:
+\texttt{nvis} lines of \texttt{7+3*nchan*nstokes+ntrail} columns, where \texttt{ntrail}
+is the number of trailing column.
+
+\subsubsection{\uv{} header}
+
+A \uv{} table header contains all the informations of a GDF header but some
+of these informations have a special meaning in this context. Command
+\com{HEADER} is the standard way inside \gildas{} to display in a human
+readable way the header of GDF file. For instance, the command \\
+\texttt{IMAGER> header gag\_demo:demo-line.uvt}  \\
+would display
+  %I-GIO_RIH,  File is  [EEEI to IEEE] , Header Version 1 (32 bit)
+\begin{verbatim}
+ 1  W-GDF,  UNKNOWN Velocity type defaulted to LSR
+ 2  File : /Users/guilloteau/gildas/gildas-exe-dev/demo/demo-line.uvt  REAL*4
+ 3  Size        Reference Pixel           Value                  Increment       
+ 4       103   16.0000000000000       220398.688000000     -0.183792725205421
+ 5      9146   0.00000000000000       0.00000000000000       1.00000000000000
+ 6  Blanking value and tolerance      1.23455997E+34   0.0000000
+ 7  Source name         GG_TAU
+ 8  Map unit            Jy
+ 9  Axis type           UV-DATA      RANDOM
+10  Coordinate system   EQUATORIAL          Velocity    LSR
+11  Right Ascension   04:32:30.34200        Declination       17:31:40.5230
+12  Lii        0.000000000000000            Bii       0.000000000000000
+13  Equinox            2000.0000
+14  Projection type     AZIMUTHAL           Angle     0.000000000000000
+15  Axis 0     A0     04:32:30.34200        Axis 0     D0     17:31:40.5230
+16  Baselines               0.0       0.0
+17  Axis 1 Line Name    13CO(21)            Rest Frequency   220398.6880000000
+18  Resolution in Velocity   0.25000000     in Frequency        -0.18379273
+19  Offset in Velocity        6.3000002     Doppler Velocity     -40.755900
+20  Beam                   0.00                0.00                 0.00
+21  NO Noise level
+22  NO Proper motion
+23  NO Telescope section
+24  UV Data    Channels:     32, Stokes: 1 None        Visibilities:        9146
+25  Column            1 (Size 1) contains U           
+26  Column            2 (Size 1) contains V           
+27  Column            4 (Size 1) contains DATE        
+28  Column            5 (Size 1) contains TIME        
+29  Column            6 (Size 1) contains IANT        
+30  Column            7 (Size 1) contains JANT        
+31  Column            3 (Size 1) contains SCAN        
+\end{verbatim}
+Comments:
+\begin{description}\itemsep 0pt
+\item[Line 1] Indicates the velocity frame. If not present in the table
+(as here), it is assumed to be LSR.
+\item[Line 2] Indicates the filename associated to the currently displayed
+  header.
+\item[Lines 3-5] Display the dimensions of the associated array. Here it is
+  a rank 2 array of dimension 9146 lines times 9146 lines, \ie\ 9146 
+  visibility spectra of 32 frequency channels.  Line
+  4 describes the frequency axis of the visibility spectra stored in the
+  \uv{} table. Be careful that this is a convention, \ie\ it must be
+  decoded using the particular form of the table. In our case, each spectra
+  has 32 frequency channels of width -183.8~kHz, the frequency of the
+  reference pixel 16.0 corresponding to 220398.688~MHz. This last
+  frequency is the frequency delivered by the correlator, \ie\ seen by the
+  observatory. In particular, this is the frequency that must be used to
+  compute the primary beam of the interferometer.
+\item[Line 8] Indicates the unit of the real and imaginary parts of the
+  visibilities, normally the Jansky (Jy).
+\item[Line 9] Indicates that this is \uv{} table (\texttt{UV-DATA} and
+  \texttt{RANDOM}).
+\item[Lines 10-13] Describe the coordinate system.
+\item[Lines 14-15] Describe the projection system. In the \uv{} table
+  format, \texttt{A0} and \texttt{D0} indicate the phase center while
+  \texttt{Right Ascension} and \texttt{Declination} indicate where the
+  antenna pointed when acquiring the signal. These information are in
+  general identical for single field imaging and different for mosaicing.
+\item[Lines 16] Indicates the baseline range in meters (m). 
+\item[Lines 17-19] Describe additional information about the frequency axis
+  of the visibility spectra. In particular, the rest frequency (here
+  220398.688~MHz, that of the $^{13}$CO J=2-1 line) corresponding to a 
+  velocity of 6.3~km/s in the velocity frame indicated at line 1 (in general LSR).
+\item[Line 20] Indicates the primary beam size of the interferometer in
+  radian. This is an obsolescent way to pass the size of the interferometer
+  antennas.
+\item[Line 21] The noise section has no meaning for the UV table.
+\item[Line 22] If present, proper motions are given in mas/yr. The epoch
+is used as the time origin.
+\item[Line 23] If the TELESCOPE section is present, this line would 
+indicate telescope name, its geographic coordinates and the antenna 
+diameter (in m). This is the new way to specify the primary beam.
+\item[Line 24] UV data section: number of channels, number of Stokes
+parameters and number of visibilities.
+\item[Line 15 to end] Special columns description.
+\end{description}
+
+
+\subsection{UV Table handling}
+
+Besides the \comm{READ}{UV} and \comm{WRITE}{UV} commands to read
+or write \uv{} tables, \imager{} has a number of commands to manipulate
+the current \uv{} table buffer. These commands have names starting
+by \texttt{UV\_}. Most of them are in the \lang{CLEAN} language, some
+in the \lang{NEWSTUFF} one. 
+
+\imager{} works using UV buffers. Most commands only work on 
+the current UV buffer, but some of them keep track of the previous
+buffer to allow the user to revert the operation.
+
+\begin{description}\itemsep 0pt
+
+\item[Data inspection and editing]:
+\begin{itemize}\itemsep 0pt
+\item \comm{SHOW}{COVERAGE} display the \uv{} coverage
+\item \comm{SHOW}{UV} display the \uv{} data
+\item \com{UV\_FLAG} allow flagging visibilities
+\item \com{UV\_PREVIEW} provides a quick view of the visibilities as a function
+of frequencies, and attempts to automatically find the continuum level
+and parts of the bandwidth with spectral line emissions.
+\end{itemize}
+
+\item[Data size reduction routines]:
+\begin{itemize}\itemsep 0pt
+\item \com{UV\_COMPRESS} is a simple spectral smoothing, providing only channel 
+averaging by integer number of channels.
+\item \com{UV\_RESAMPLE} provides a more flexible spectral smoothing and resampling
+facility. 
+\item \com{UV\_TIME}  can be used to time-average the UV data set, leading
+to faster processing. However, using \com{UV\_TIME} too early may limit
+your ability to perform accurate phase self-calibration.
+\end{itemize}
+
+\item[Continuum processing commands]:
+\begin{itemize}\itemsep 0pt
+\item \com{UV\_BASELINE} allows to remove the continuum baseline, by
+0th or 1st order baseline fitting of each visibility. 
+\item Conversely, \com{UV\_FILTER} will filter the spectral line
+range to leave only the channels with continuum emission.
+Both \com{UV\_BASELINE} and \com{UV\_FILTER} can use the results provided
+by \com{UV\_PREVIEW} to specify where spectral lines may be found.
+\item \com{UV\_CONTINUUM} converts a spectral line \uv{} table into a bandwidth 
+synthesis continuum \uv{} table. \com{UV\_CONTINUUM} requires some knowledge of 
+the image size to evaluate how many channels should be averaged 
+together. This is done using the same parameters and subroutines as 
+for commands \comm{UV\_STAT}{SETUP} and \com{UV\_MAP}.
+\end{itemize}
+
+\item[Image preparation]:
+\begin{itemize}\itemsep 0pt
+\item \com{UV\_CHECK} inspects the \uv{} data to figure out how many
+different synthesized beams are needed.
+\item \com{UV\_SHORT} adds the short (or zero) spacing information provided by
+an additional single dish data, read by \comm{READ}{SINGLE}.
+\item \com{UV\_STAT} evaluates the impact of robust weighting
+and tapering on the synthesized beam. It provides recommandations for
+the image and pixel sizes.
+\item \com{UV\_TRUNCATE} restricts the \uv{} baseline length range.
+\end{itemize}
+
+\item[Miscellaneous]:
+\begin{itemize}\itemsep 0pt
+\item \com{UV\_DEPROJECT} de-project the $(u,v)$ coordinates given
+a specified phase center, orientation and inclination. This can be
+useful for inclined, flattened, nearly axi-symmetric structures such as
+proto-planetary disks or galaxies. 
+\item \com{UV\_RADIAL} computes the azimutal average of the visibilities.
+It is useful for rotationally symmetric structures such as proto-planetary disks, 
+for example.
+\item \com{UV\_REWEIGHT} changes the visibility weights.
+\item \com{UV\_SHIFT} changes the phase center
+\end{itemize}
+
+\end{description} 
+
+The remaining \com{UV\_...} commands are related to imaging and
+deconvolution: \com{UV\_MAP} computes the dirty image, \com{UV\_RESTORE}
+computes the Clean image from a Clean component list by removal
+of the Clean components in the \uv{} plane, and imaging of the residuals.
+\com{UV\_RESIDUAL} just computes the residuals by subtraction of the
+Clean components. 
+
+Finally, \com{UV\_SELF}, in the \lang{CALIBRATE} language, is a specific variant
+of \com{UV\_MAP} used to compute the intermediate images required for
+self-calibration. It is not intended for direct use by normal users.
+
