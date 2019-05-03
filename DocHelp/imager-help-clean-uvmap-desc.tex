@@ -1,0 +1,420 @@
+\subsubsection{MAP\_\_BEAM\_\_STEP}
+\index{�!MAP\_\_BEAM\_\_STEP}
+\begin{verbatim}
+
+  MAP__BEAM__STEP   Integer
+
+Number of channels per synthesized beam plane.
+
+Default is 0, meaning only 1 beam plane for all channels.  N (>0)
+indicates N consecutive channels will share the same dirty beam.
+
+A value of -1 can be used to compute the number of  channels  per
+beam plane to ensure the angular scale does not deviate more than
+a fraction of the map cell at the map edge. This fraction is con-
+trolled by variable MAP__PRECIS (default 0.1)
+
+\end{verbatim}
+\subsubsection{MAP\_\_CELL}
+\index{�!MAP\_\_CELL}
+\begin{verbatim}
+
+      MAP__CELL[2]    Real
+
+The  map  pixel size [arcsec]. It is recommended to use identical
+values in X and Y.  A sampling of at least 3 pixel  per  beam  is
+recommended  to ease the deconvolution. Enter 0,0 to let the task
+find the best values.
+
+\end{verbatim}
+\subsubsection{MAP\_\_CENTER}
+\index{�!MAP\_\_CENTER}
+\begin{verbatim}
+
+      MAP__CENTER     Character String
+
+Specify the Map center and orientation in the same way as the ar-
+guments of UV__MAP.
+
+\end{verbatim}
+\subsubsection{MAP\_\_CONVOLUTION}
+\index{�!MAP\_\_CONVOLUTION}
+\begin{verbatim}
+
+    MAP__CONVOLUTION    Integer
+
+Select the desired convolution function for gridding  in  the  UV
+plane Choices are
+        0    Default (currently 5)
+        1    Boxcar
+        2    Gaussian
+        3    Sin(x)/x
+        4    Gaussian * Sin(x)/x
+        5    Spheroidal
+Spheroidal functions is the optimal choice. So we  strongly  dis-
+courage use of any other convolution function, which are here for
+tests only.
+
+\end{verbatim}
+\subsubsection{MAP\_\_FIELD}
+\index{�!MAP\_\_FIELD}
+\begin{verbatim}
+
+  MAP__FIELD[2]     Real
+
+Field of view in X and Y in arcsec.  The field of view MAP__FIELD
+has  precedence over the number of pixels MAP__SIZE to define the
+actual map size when both are non-zero.
+
+\end{verbatim}
+\subsubsection{MAP\_\_POWER}
+\index{�!MAP\_\_POWER}
+\begin{verbatim}
+
+      MAP__POWER[2]     Integer
+
+Maximum exponent of  3  and  5  allowed  in  automatic  guess  of
+MAP__SIZE.   MAP__SIZE  is decomposed in 2^k 3^p 5^q, and p and q
+must be less or equal to MAP__POWER.
+
+Default is 0: MAP__SIZE is just a power of 2. A value of 1 allows
+approximation  of any map size to 20 %, while a value of 2 allows
+\end{verbatim}
+\subsection{0}
+\index{0}
+\begin{verbatim}
+with  powers of 3 and 5, but limiting the map size can gain a lot
+in the Cleaning process (which can scale as MAP__SIZE^4).
+
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_PRECIS}
+\index{0!MAP\_\_PRECIS}
+\begin{verbatim}
+
+  MAP__PRECIS    Real
+
+Maximum mismatch in pixel at map edge between  the  true  synthe-
+sized  beam (which would have been computed using the exact chan-
+nel frequency) and the computed synthesized beam with   the  mean
+frequency  of  the  channels  sharing the same beam. This is used
+(with the actual image size) to derive the actual number of chan-
+nels  which  can share the same beam, i.e. the effective value of
+MAP__BEAM__STEP when MAP__BEAM__STEP is -1.
+
+Default is 0.1
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_ROBUST}
+\index{0!MAP\_\_ROBUST}
+\begin{verbatim}
+
+  MAP__ROBUST     Real
+
+Robust weighting factor. A number between 0 and +infty.
+
+Robust weighting gives the natural weight to UV cells whose natu-
+ral  weight  is lower than a given threshold. In contrast, if the
+natural weight of the UV cell is larger than this threshold,  the
+weight  is  set  to this (uniform) threshold. The UV cell size is
+defined by MAP__UVCELL and the threshold value is in MAP__ROBUST.
+
+0 means natural weighting, which is optimal  for  point  sources.
+The Robust weighting factor controls the resolution: better reso-
+lution is obtained for small values (at the  expense  of  noise),
+resolution  approaching  the  natural  weighting scheme for large
+values.  Larger UV cell size give higher angular resolution  (but
+again more noise).
+
+MAP__ROBUST around .5 to 1 is a good compromise between noise in-
+crease and angular resolution.
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_ROUNDING}
+\index{0!MAP\_\_ROUNDING}
+\begin{verbatim}
+
+  MAP__ROUNDING     Real
+
+Maximum error between optimal size (MAP__FIELD /  MAP__CELL)  and
+rounded  (as  a power of 2^k 3^p 5^q) MAP__SIZE to round by floor
+(thus limiting the field of  view),  instead  of  ceiling  (which
+guarantees a larger field of view, but leads to bigger images).
+
+Default is 0.05.
+
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_SHIFT}
+\index{0!MAP\_\_SHIFT}
+\begin{verbatim}
+
+  MAP__SHIFT        Logical
+
+Obsolescent, superseded by MAP__CENTER, or the UV__MAP arguments.
+
+Logical variable indicating whether map center (i.e. phase track-
+ing center) or orientation should be changed.
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_SIZE}
+\index{0!MAP\_\_SIZE}
+\begin{verbatim}
+
+  MAP__SIZE[2]      Integer
+
+Number of pixels in X and Y. It should preferentially be a  power
+of  two, (although this is not strictly required) to speed-up the
+FFT. MAP__SIZE*MAP__CELL should be at least twice the size of the
+field-of-view  (primary  beam size for a single field). Enter 0,0
+to let the command find a sensible map size.
+
+MAP__SIZE is not used if MAP__FIELD is non zero.
+
+Odd values are forbidden.
+
+Default is 0,0, i.e. UV__MAP will guess the most appropriate val-
+ues which depend on MAP__ROUNDING and MAP__POWER.
+
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_TAPEREXPO}
+\index{0!MAP\_\_TAPEREXPO}
+\begin{verbatim}
+
+  MAP__TAPEREXPO    Real
+
+Taper  exponent.  The  default  is  2 (indicating a Gaussian) but
+smoother or sharper functions can be used. 1 would give an  Expo-
+nential, 4 would be getting close to square profile...
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_TRUNCATE}
+\index{0!MAP\_\_TRUNCATE}
+\begin{verbatim}
+
+  MAP__TRUNCATE    Real
+
+Mosaic  truncation  level in PerCent.  Default value is 0.2. Cur-
+rent value can be  overriden  by  option  /TRUNCATE  in  commands
+UV__MAP or PRIMARY.
+
+\end{verbatim}
+\subsubsection{0 MAP\_\_UVTAPER}
+\index{0!MAP\_\_UVTAPER}
+\begin{verbatim}
+
+  MAP__UVTAPER[3]  Real
+
+Parameters of the tapering function (Gaussian if MAP__TAPEREXPO =
+\end{verbatim}
+\subsubsection{0 ):}
+\index{0!):}
+\begin{verbatim}
+position angle [deg].
+
+\end{verbatim}
+\subsubsection{MAP\_\_UVCELL}
+\index{0!MAP\_\_UVCELL}
+\begin{verbatim}
+
+  MAP__UVCELL   Real
+
+UV cell size for robust weighting [m].  Should be of the order of
+half the dish diameter (7.5 m for PdBI), or smaller or even larg-
+er.  It controls the beam shape in Robust weighting.
+
+\end{verbatim}
+\subsubsection{MAP\_\_VERSION}
+\index{0!MAP\_\_VERSION}
+\begin{verbatim}
+
+  MAP__VERSION  Integer
+
+[EXPERT  Only]  Code  indicating which version of the UV__MAP and
+UV__RESTORE algorithm should be used. 0 is  optimal.  -1  is  the
+"historical"  (pre-2016)  version.  1  is an intermediate version
+used during multi-frequency beams development.
+
+
+
+\end{verbatim}
+\subsubsection{Old\_\_Names:}
+\index{0!Old\_\_Names:}
+\begin{verbatim}
+
+NAME is no longer used, and WEIGHT__MODE is obsolete.
+MAP__RA          [  hours]  RA of map center
+MAP__DEC         [    deg]  Dec of map center
+MAP__ANGLE       [    deg]  Map position angle
+MAP__SHIFT       [Yes/No ]  Shift phase center
+are obsolescent, superseded by MAP__CENTER. They are provided on-
+ly for compatibility with older scripts.
+
+WCOL (the Weight channel) and MCOL[2] (the channel range) are ob-
+solete also. WCOL has no meaning when more than 1  beam  must  be
+produced  for  all channels, and should be set to 0.  MCOL is su-
+perseded by the /RANGE option facility.
+
+ NAME        [       ]  Label of the dirty image and beam plots
+ UV__TAPER    [m,m,deg]  UV-apodization by convolution with a Gaussian
+ WEIGHT__MODE [       ]  Weighting mode (NA|UN)
+ UV__CELL     [m, ??  ]  UV cell size and threshold for Robust weighting
+ MAP__FIELD   [ arcsec]  Map field of view
+ MAP__CELL    [ arcsec]  Map cell size
+ MAP__SIZE    [ pixels]  Map size in pixels (if MAP__FIELD is zero)
+ MCOL        [       ]  First and Last channel to map
+ WCOL        [       ]  Channel from which the weights are taken
+ CONVOLUTION [       ]  Convolution function (5)
+ UV__SHIFT    [       ]  Change the map phase center or map orientation?
+ MAP__RA      [       ]  RA of map phase center
+ MAP__DEC     [       ]  Dec of map phase center
+ MAP__ANGLE   [    deg]  Map position angle
+ MAP__BEAM__STEP [     ]  Number of channels per synthesized beam plane
+
+\end{verbatim}
+\subsubsection{convolution}
+\index{0!convolution}
+\begin{verbatim}
+
+  Older variable name for MAP__CONVOLUTION
+
+\end{verbatim}
+\subsubsection{map\_\_angle}
+\index{0!map\_\_angle}
+\begin{verbatim}
+
+  MAP__ANGLE      Real
+
+Position Angle of the direction which will  become  the  apparent
+North in the map. Used only if UV__SHIFT is YES.
+
+Superseded by MAP__CENTER.
+
+\end{verbatim}
+\subsubsection{map\_\_dec}
+\index{0!map\_\_dec}
+\begin{verbatim}
+
+  MAP__DEC     Real
+
+Dec of map center. Used only if UV__SHIFT is YES.
+
+Superseded by MAP__CENTER.
+
+\end{verbatim}
+\subsubsection{map\_\_ra}
+\index{0!map\_\_ra}
+\begin{verbatim}
+
+  MAP__RA      Real
+
+RA of map center. Used only if UV__SHIFT is YES.
+
+Superseded by MAP__CENTER.
+
+\end{verbatim}
+\subsubsection{mcol}
+\index{0!mcol}
+\begin{verbatim}
+
+  mcol[2]   Integer
+
+[Deprecated]  First  and  Last channel to image. Values of 0 mean
+imaging all the planes.  See UV__MAP /RANGE for a  more  flexible
+way to specify the channel range.
+
+\end{verbatim}
+\subsubsection{uv\_\_cell}
+\index{0!uv\_\_cell}
+\begin{verbatim}
+
+  Older variables for MAP__UVCELL (uv_cell[1]) and MAP__ROBUST
+
+\end{verbatim}
+\subsubsection{uv\_\_shift}
+\index{0!uv\_\_shift}
+\begin{verbatim}
+
+  Older  variable  name  of MAP__SHIFT (this one is also obsoles-
+cent)
+
+\end{verbatim}
+\subsubsection{uv\_\_taper}
+\index{0!uv\_\_taper}
+\begin{verbatim}
+
+  Older variable name of MAP__UVTAPER
+
+\end{verbatim}
+\subsubsection{taper\_\_expo}
+\index{0!taper\_\_expo}
+\begin{verbatim}
+
+  Older variable name for MAP__TAPEREXPO
+
+\end{verbatim}
+\subsubsection{wcol}
+\index{0!wcol}
+\begin{verbatim}
+
+  WCOL      Integer
+
+[Obsolescent] The channel from which the weight should be  taken.
+WCOL  set  to  0  means using a default channel. WCOL has no real
+meaning in all cases where more than one beam is computed for all
+channels.
+
+\end{verbatim}
+\subsubsection{weight\_\_mode}
+\index{0!weight\_\_mode}
+\begin{verbatim}
+
+  weight_mode      Character
+
+[Deprecated]  Weighting mode: Natural (optimum in terms of sensi-
+tivity) or robust (usually lower  sidelobes  and  higher  spatial
+resolution)  weighting.  This was needed in Mapping to toggle be-
+tween Natural and Robust weighting, while IMAGER does that  based
+on MAP__ROBUST value.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{verbatim}
