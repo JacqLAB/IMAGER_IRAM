@@ -49,8 +49,8 @@ approximation (after calibration)
   V(u,v) = \mbox{FT}\cbrace{B_\emr{primary}.I_\emr{source}}(u,v)+N
 \end{equation}
 where $\mbox{FT}\cbrace{F}(f)$ is the bi-dimensional Fourier transform of
-the function $F$ taken at the spatial frequency $f$, $I_\emr{source}$ the
-sky intensity, $B_\emr{primary}$ the primary beam of the interferometer
+the function $F$ taken at the spatial frequency $f$, $I_{\emr{source}}$ the
+sky intensity, $B_{\emr{primary}}$ the primary beam of the interferometer
 (\ie\ a Gaussian of FWHM the natural resolution of the single-dish antenna
 composing the interferometer), $N$ some thermal noise and $V(u,v)$ the
 calibrated visibility at the spatial frequency $u,v$. The product of the
@@ -294,9 +294,9 @@ Rather read carefully the information below:
 \com{UV\_SHORT} is simple to use, but can be tricky to use well !...
 
 \subsection{Principle}
-Let's note $D$ the diameter of the single-dish antenna ($D = 30$m for the
+Let's note \textit{D} the diameter of the single-dish antenna (\textit{D\,=\,30}m for the
 IRAM-30m telescope) used to produce the short-spacing information and $d$
-the diameter of the interferometer antennas ($d = 15$m for \PdBI{}). We
+the diameter of the interferometer antennas (\textit{d\,=\,15}m for \NOEMA{}). We
 already mentioned that a multiplicative interferometer filters out all the
 spatial frequencies smaller than $\sim d$ meters. When this information is
 needed to get reliable results, the source should also be observed with a
@@ -305,8 +305,8 @@ antenna furnishes information about all spatial frequencies up to $\sim D$
 meters (but this information is weighted by the single-dish beam shape,
 \ie\ high frequencies are measured with a worse signal-to-noise ratio than
 low frequencies). To recover all the information at spatial frequencies
-smaller than $\sim d$ meters, the diameter of single-dish antenna must be
-larger or equal to the diameter of the interferometer antennae: $D \ge d$.
+smaller than \textit{d} meters, the diameter of single-dish antenna must be
+larger or equal to the diameter of the interferometer antennae: \textit{D}$\ge$\textit{d}.
 
 \subsection{Algorithms to merge single-dish and interferometer information}
 
@@ -316,32 +316,32 @@ single-dish antenna is
 \begin{equation}
   I_\emr{meas}^\emr{sd} = B_\emr{sd} \star I_\emr{source} + N,
 \end{equation}
-\ie\ the measured intensity ($I_\emr{meas}^\emr{sd}$) is the convolution of
-the source intensity distribution ($I_\emr{source}$) by the single-dish
-beam ($B_\emr{sd}$) plus some thermal noise, while the measurement equation
+\ie\ the measured intensity ($I_{\emr{meas}}^{\emr{sd}}$) is the convolution of
+the source intensity distribution ($I_{\emr{source}}$) by the single-dish
+beam ($B_{\emr{sd}}$) plus some thermal noise, while the measurement equation
 of an interferometer can be rewritten as
 \begin{equation}
-  I_\emr{meas}^\emr{int} = B_\emr{dirty} \star \cbrace{B_\emr{primary}.I_\emr{source}} + N,
+  I_\emr{meas}^\emr{id} = B_\emr{dirty} \star \cbrace{B_\emr{primary}.I_\emr{source}} + N,
 \end{equation}
-\ie\ the measured intensity ($I_\emr{meas}^\emr{int}$) is the convolution
+\ie\ the measured intensity ($I_{\emr{meas}}^{\emr{id}}$) is the convolution
 of the source intensity distribution times the primary beam
-($B_\emr{primary}.I_\emr{source}$) by the dirty beam ($B_\emr{dirty}$) plus
-some thermal noise. $B_\emr{sd}$ has very similar properties than
-$B_\emr{primary}$ and very different properties than $B_\emr{dirty}$.  In
-radioastronomy, $B_\emr{sd}$ and $B_\emr{primary}$ both have Gaussian
-shapes. Moreover, the fact that we will use the single-dish information to
+($B_{\emr{primary}}.I_{\emr{source}}$) by the dirty beam ($B_{\emr{dirty}}$) plus
+some thermal noise. $B_{\emr{sd}}$ has very similar properties than
+$B_{\emr{primary}}$ and very different properties than $B_{\emr{dirty}}$.  In
+radioastronomy, $B_{\emr{sd}}$ and $B_{\emr{primary}}$ both have (approximately)
+Gaussian shapes. Moreover, the fact that we will use the single-dish information to
 produce the short-spacing information filtered out by the interferometer
-implies that $B_\emr{sd}$ and $B_\emr{primary}$ have similar full width at
-half maximum. Now, $B_\emr{dirty}$ is quite far from a Gaussian shape with
+implies that $B_{\emr{sd}}$ and $B_{\emr{primary}}$ have similar full width at
+half maximum. Now, $B_{\emr{dirty}}$ is quite far from a Gaussian shape with
 the current generation of interferometer (in particular, it has large
-sidelobes) and the primary side lobe of $B_\emr{dirty}$ has a full width at
+sidelobes) and the primary side lobe of $B_{\emr{dirty}}$ has a full width at
 half maximum close to the interferometer resolution, \ie\ much smaller than
-the FWHM of $B_\emr{sd}$.
+the FWHM of $B_{\emr{sd}}$.
 
 Merging both kinds of information obtained from such different measurement
 equations thus asks for a dedicated processing. There are mainly two
-families of short-spacing processing: The hybridization and the
-pseudo-visibility techniques.
+families of short-spacing processing: the \textbf{hybridization} and the
+\textbf{pseudo-visibility} techniques.
 
 \subsubsection{Hybridization technique}
 
@@ -349,27 +349,28 @@ In this family, most of the processing is done on the interferometric data
 alone. Indeed, the interferometric data is deconvolved and corrected for
 the primary beam contribution to obtain
 \begin{equation}
-  I_\emr{clean}^\emr{int} = B_\emr{clean} \star I_\emr{source} + N',
+  I_\emr{clean}^\emr{id} = B_\emr{clean} \star I_\emr{source} + N',
   \label{eq:clean}
 \end{equation}
-where $B_\emr{clean}$ is a Gaussian of FWHM equal to the interferometer
+where $B_{\emr{clean}}$ is a Gaussian of FWHM equal to the interferometer
 resolution and $N'$ is some thermal noise corrected for the primary beam
 contribution.  Two main facts are hidden in this formulation: 1) the
 field-of-view of the observation is obviously limited to the observed
 portion of the sky and 2) more importantly, the lack of short-spacings has
 not yet been overcome and a better formulation would be
 \begin{equation}
-  I_\emr{clean}^\emr{int} = \mbox{Highpass-filter}\cbrace{B_\emr{clean} \star I_\emr{source}} + N'.
+  I_\emr{clean}^\emr{id} = \mbox{Highpass-filter}\cbrace{B_\emr{clean} \star I_\emr{source}} + N'.
 \end{equation}
 The simplicity of equation~\ref{eq:clean} is thus slightly misleading but
 we will keep it for the sake of simplicity. The hybridization method
-consists in combining two images ($I_\emr{meas}^\emr{sd}$ and
-$I_\emr{clean}^\emr{int}$) in the \uv{} plane.
+consists in combining two images ($I_{\emr{meas}}^{\emr{sd}}$ and
+$I_{\emr{clean}}^{\emr{id}}$) in the \uv{} plane.
+
 \begin{enumerate}
 \item Both images are first spatially regridded on the same fine grid.
 \item The FFT of those two images are computed, and linearly combined by
-  selecting the low spatial frequencies from FFT($I_\emr{meas}^\emr{sd}$)
-  and the high spatial frequencies from FFT($I_\emr{clean}^\emr{int}$).
+  selecting the low spatial frequencies from FFT($I_{\emr{meas}}^{\emr{sd}}$)
+  and the high spatial frequencies from FFT($I_{\emr{clean}}^{\emr{id}}$).
   The transition between low and high spatial frequency
 \item The result is FFTed back to the image plane to produce a final,unique
   image, which takes into account both single-dish and interferometric
@@ -392,11 +393,11 @@ that would be produced by the interferometer if they were not filtered out.
 \begin{enumerate}\itemsep 0pt
 \item The Single-Dish measurements are re-gridded and then FFTed into the
   \uv{} plane.
-\item The data are deconvolved of the single-dish beam ($B_\emr{sd}$)
+\item The data are deconvolved of the single-dish beam ($B_{\emr{sd}}$)
   convolution by division by its Fourier Transform (truncated to the
   antenna diameter).
 \item The data are FFTed back to the image plane and multiplied by the
-  interferometer primary beam, $B_\emr{primary}$.
+  interferometer primary beam, $B_{\emr{primary}}$.
 \item The result is FFTed again in the \uv{} plane where the visibilities
   are sampled on a regular grid.
 \item In the case of a mosaic, the two last operations are performed for
@@ -414,9 +415,9 @@ primary beam. Hence, to get pseudo-visibilities truly consistent with
 interferometric visibilities, we must be able to reliably compute the
 convolution by the Fourier transform of the primary beam. This implies that
 we can compute pseudo-visibilities only for spatial frequencies lower than
-$D-d$. The use of the IRAM-30m to produce the short-spacing information of
-the \PdBI{} is thus ideal as it enables to recover pseudo-visibilities up
-to 15~m ($=30\,\mbox{m}-15\,\mbox{m}$). Once the pseudo-visibilities have
+\textit{D-d}. The use of the IRAM-30m to produce the short-spacing information of
+the \NOEMA{} is thus ideal as it enables to recover pseudo-visibilities up
+to 15~m (=30\,\mbox{m}-15\,\mbox{m}). Once the pseudo-visibilities have
 been computed, they are merged with the interferometric visibilities and
 standard imaging and deconvolution are then applied to the merged data set.
 
@@ -438,8 +439,8 @@ range of frequencies used for the short spacing processing. We thus end up
 with the need to match (as far as possible) the Single-Dish and
 interferometric densities of weights in the \uv{} plane. In practice, we
 compute the density of weights from the single-dish in a \uv{} circle of
-radius $1.25 d$ and we match it to the averaged density of weights from the
-interferometer in a \uv{} ring between 1.25 and $2.5 d$. Experience shows
+radius 1.25\,\textit{d} and we match it to the averaged density of weights from the
+interferometer in a \uv{} ring between 1.25 and 2.5\,\textit{d}. Experience shows
 that this gives the right order of magnitude for the relative weight and
 that a large range of relative weight around this value gives very similar
 final results.
@@ -609,20 +610,29 @@ it (there is no direct ``replace'' possibility).
 \item If the source size is smaller than 1/3 the primary beam size,
   short-spacing information is superfluous.
 \item If the source size is between 1/3 and 1/2 the primary beam size of
-  NOEMA antennas, a single spectra obtained at the IRAM-30m telescope in
+  \NOEMA{} antennas, a single spectra obtained at the IRAM-30m telescope in
   the direction of the source can be used to produce the zero spacing
   information with the \com{UV\_ZERO} task. Indeed, the IRAM-30m diameter
-  being twice the diameter of the \PdBI{} antenna, all the flux of the
+  being twice the diameter of the \NOEMA{} antenna, all the flux of the
   source will be measured by a single IRAM-30m spectrum only if the size of
   the source is smaller than 1/2 the primary beam size of \PdBI{} antennae.
 \item If the source size is larger than 1/2 the primary beam size of
-  NOEMA antennas, short-spacing information under the form of an IRAM-30m
+  \NOEMA{} antennas, short-spacing information under the form of an IRAM-30m
   map is almost always mandatory. The only exception could be wide-field
   imaging of a region made of unresolved or small (compared to the primary
   beam size) sources as it may happen when mapping close-by external
   galaxies for instance. However, adding short-spacing will anyway help the
-  deconvolution. In case of doubt, always add short-spacing information.
+  deconvolution. 
+\item Short-spacing information is only useful if the brightness of the
+  extended component is above the noise level. This requires a prior knowledge
+  of the total flux in the imaged area to be determined. However, this
+  information may be available from previous low-sensitivity single-dish
+  observations. Checking this can avoid wasting a lot of telescope
+  (and astronomer) time.
 \end{itemize}
+A generalization to \ALMA{} (12 m antenna) and ACA (7 m antennas)
+is straightforward.
+
 
 \subsubsection{How to optimize single-dish observations?}
 
@@ -630,7 +640,7 @@ One of the main difficulty of the short-spacing problematic is the need of
 observations from a single-dish telescope at least as big as the
 interferometer antennas\footnote{If there were no pointing errors,
 a single-dish of the same size as the interferometer antennas
-would be strictly sufficient.}. In this respect, the IRAM-30m and NOEMA are very
+would be strictly sufficient.}. In this respect, the IRAM-30m and \NOEMA{} are very
 complementary. Nevertheless, when observing with the single-dish telescope,
 a few precautions are needed to avoid contaminating the interferometric
 data with possible artifacts of single-dish data.
@@ -646,9 +656,15 @@ data with possible artifacts of single-dish data.
   in obtaining a high quality single-dish map to produce short-spacing
   information. For instance, data with too large tracking errors should be
   discarded.
+\item Among ``baseline'' issues, the presence of continuum sources
+  is to be treated with care. Continuum is difficult to measure with
+  single-dish telescopes, and a (linear or polynomial) spectral baseline
+  is often fitted to avoid atmospheric contamination. In such cases,
+  the combination should be made with interferometer data where the 
+  continuum has been removed, and added back later\ldots 
 \item We advise to make many On-The-Fly coverages of the observed
   field-of-view to get homogeneous observing conditions. Scanning in
-  perpendicular directions is needed to decrease stripping.
+  perpendicular directions is needed to decrease stripping.  
 \end{itemize}
 Sometimes, single-dish telescope time is scarce and some of the above
 criteria can not be fulfilled. In those cases, you can still try to use

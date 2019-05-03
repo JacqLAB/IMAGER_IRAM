@@ -1,4 +1,5 @@
 \documentclass[11pt]{article}
+%\usepackage[utf8]{inputenc}
 \usepackage{natbib}
 \usepackage{color}
 \include{gildas-def} % GILDAS ( + at some point IMAGER) specific definitions
@@ -9,39 +10,44 @@
 
 \newcommand{\lmv}{\texttt{lmv}}
 \newcommand{\clean}{\texttt{CLEAN}}
-\newcommand{\uv}{$uv$}
+\newcommand{\uv}{\textit{uv}}
 \newcommand{\emm}[1]{\ensuremath{#1}}   % Ensures math mode.
 \newcommand{\emr}[1]{\emm{\mathrm{#1}}} % Uses math roman fonts.
 \newcommand{\nds}[1]{\emm{\displaystyle#1}} % Normal display size for array and tabular environment.
 \newcommand{\paren}[1]  {\nds{\left(  #1 \right) }} % Parenthesis. 
 \newcommand{\cbrace}[1] {\nds{\left\{ #1 \right\}}} % Curly Braces.
 \newcommand{\abs}[1]{\emm{\left| #1 \right|}} % Absolute value.
+\newcommand{\sicvar}[1] {\mbox {\tt #1}}
+\newcommand{\lang}[1]{\mbox {\texttt{\MakeUppercase{#1}\textbackslash}}}
+\newcommand{\imager} {\mbox{{{\sc imager}}}}
 
-\begin{latexonly}
+% Use COLOR only in PDF - does not translate (yet) correctly in HTML version
+%begin{latexonly}
 \renewcommand{\sic}    {\mbox{{\color{red} \sc sic}}}
 \renewcommand{\greg}   {\mbox{{\color{red} \sc greg}}}
+\renewcommand{\clic}   {\mbox{{\color{red} \sc clic}}}
 \renewcommand{\mapping}{\mbox{{\color[rgb]{1,0,0}{\sc mapping}}}}
 \renewcommand{\com}[1] {\mbox {{\color{magenta}\tt #1}}\index{#1}}
 \renewcommand{\comm}[2]{\mbox {{\color{magenta}\tt #1 #2}}\index{#1!#2}}
-\end{latexonly}
+%
+\renewcommand{\imager} {\mbox{{\color[rgb]{1,0,0}{\sc imager}}}}
+\renewcommand{\sicvar}[1] {\mbox {\color{blue}\tt #1}}
+\renewcommand{\lang}[1]{\mbox {\color{magenta}\texttt{\MakeUppercase{#1}\textbackslash}}}
+%end{latexonly}
 %
 %\newcommand{\PdBI}{\mbox{PdBI}}
 \newcommand{\NOEMA}{\mbox{NOEMA}}
 %\newcommand{\ALMA}{\mbox{ALMA}}
 \newcommand{\IRAM}{\mbox{IRAM}}
-\newcommand{\imager} {\mbox{{\color[rgb]{1,0,0}{\sc imager}}}}
-\newcommand{\sicvar}[1] {\mbox {\color{blue}\tt #1}}
-\newcommand{\lang}[1]{\mbox {\color{magenta}\texttt{\MakeUppercase{#1}$\backslash$}}}
 
 \begin{htmlonly}
 %\renewcommand{\sic}    {\mbox{{\sc sic}}}
 %\renewcommand{\greg}   {\mbox{{\sc greg}}}
+%\renewcommand{\clic}   {\mbox{{\sc clic}}}
 %\renewcommand{\mapping}{\mbox{{{\sc mapping}}}}
 %\renewcommand{\com}[1] {\mbox {\tt #1}\index{#1}}
 %\renewcommand{\comm}[2]{\mbox {\tt #1 #2}\index{#1!#2}}
-\newcommand{\imager} {\mbox{{{\sc imager}}}}
-\newcommand{\sicvar}[1] {\mbox {\tt #1}}
-\newcommand{\lang}[1]{\mbox {\texttt{\MakeUppercase{#1}$\backslash$}}}
+%\renewcommand{\imager} {\mbox{{{\sc imager}}}}
 \renewcommand{\color}[1]{} % {\mbox {\tt #1 #2}\index{#1!#2}}
 \end{htmlonly}
 
@@ -59,8 +65,11 @@
   } \\[2\bigskipamount]
   \Large{}
   A \gildas{} software\\[\bigskipamount]
-  November 19th, 2018\\[\bigskipamount]
-  Version 1.0\\[2\bigskipamount]
+  March 26th, 2019\\[\bigskipamount]
+  Version 1.2\\[2\bigskipamount]
+% I-IMAGER,  CLEAN\     Version 4.5-02 14-Mar-2019  S.Guilloteau
+% I-IMAGER,  ADVANCED\  Version 1.6-05 28-Mar-2019  S.Guilloteau
+% I-IMAGER,  CALIBRATE\ Version 1.2-01 20-Mar-2019  S.Guilloteau
   \large{}
   Questions? Comments? Bug reports? Mail to: \texttt{gildas@iram.fr}\\[2\bigskipamount]
   The \gildas{} team welcomes an acknowledgment in publications\\
@@ -71,13 +80,13 @@
 
 \begin{description}
 \item[Documentation] \mbox{}\\
-  \credit{E.~Di~Folco$^{3}$}{S.~Guilloteau$^{3}$}{J.~Pety$^{1,2}$} 
+  \credit{E.~Di~Folco$^{1}$}{S.~Guilloteau$^{1}$}{J.~Pety$^{2,3}$} 
 \item[Software] \mbox{}\\
-  \credit{S.~Guilloteau$^{3}$}{S.~Bardeau$^{1,2}$}{}
+  \credit{S.~Guilloteau$^{3}$}{S.~Bardeau$^{2}$}{J.~Pety$^{2,3}$}
 \end{description}
-1. IRAM\\
-2. Observatoire de Paris\\
-3. Laboratoire d'Astrophysique de Bordeaux
+1. Laboratoire d'Astrophysique de Bordeaux
+2. IRAM\\
+3. Observatoire de Paris\\
 
 \begin{rawhtml}
   Note: this is the on-line version of the IMAGER Manual.
@@ -95,7 +104,7 @@ Related information is available in:
   \item{IRAM Plateau de Bure Interferometer: Atmospheric Calibration}
   \item{IRAM Plateau de Bure Interferometer: Calibration Cookbook}
   \item{CLIC: Continuum and Line Interferometric Calibration}
-  \item{MIS:  Millimeter Interferometry Simulation Tools}
+  % \item{MIS:  Millimeter Interferometry Simulation Tools}
   \item{GREG: Graphical Possibilities}
   \item{SIC:  Command Line Interpretor}
   \end{itemize}
@@ -124,28 +133,7 @@ Related information is available in:
 % \mainmatter{} % for BOOKS only
 
 \newpage
-\section{Warning}
-
-\textbf{This document is under construction; it is partly based on the older documentation of \mapping{}.}
-
-\imager\ is an interferometric imaging package, tailored for usage
-  simplicity and efficiency for multi-spectral data sets.
-\textbf{\imager\  is *** NOT *** \mapping }
- 
- Although the underlying algorithms are the same as in the
-\mapping\ program, the overall concepts for user interaction differ:
-\begin{itemize}
-\item The user interface to \mapping{} is file-oriented. The user interacts
-  with \mapping\ generally by a script, packaging a complex sequence of
-  commands, tasks, reads and writes to intermediate files. 
-  %Fine control of the script parameters are in general done through widgets.
-\item
-    The basic concept of \imager{} is opposite: a single \com{READ} of data, a
-  few simple processing commands with built-in intelligent parameter
-  guesses, a visual user control, and a single \com{WRITE} of the results
-  once the user is satisfied of it.
-\end{itemize}
-
+\input{preamble.tex}
 
 \newpage
 \input{basic-concepts}
@@ -162,8 +150,17 @@ Related information is available in:
 \newpage
 \input{self-calibration}
 
+\clearpage
 \newpage
 \input{view-show}
+
+\clearpage
+\newpage
+\input{all-in-one}
+
+\clearpage
+\newpage
+\input{polarization}
 
 %\input{in-out-imager}
 
@@ -173,7 +170,9 @@ Related information is available in:
 %% \chapter{Imaging simulation}
 
 % {Internal Helps}
+\clearpage
 \newpage
+
 \section{CLEAN Language Internal Help} \label{CLEANH}
 \input{imager-help-clean}
 
@@ -182,19 +181,47 @@ Related information is available in:
 \input{imager-help-calib}
 
 \newpage
-\section{NEWSTUFF Language Internal Help} \label{CLEANN}
+\section{ADVANCED Language Internal Help} \label{CLEANN}
 \input{imager-help-news}
 
 %\section{Description of Associated Tasks}
 %\input{mapping-task-summ}
 %the file mapping-task-summ.tex was copied from gildas-src-dev/integ/doc/tasks
 % see also mapping-tasks-list.tex
+
+\newpage
+
 \appendix{}
+\input{app-casa}
 
 \section{Properties of the Fourier Transform}
-
+\label{app:fourier}
+Let us name $f(x)$ a function, and $F(X)$ its Fourier transform. We
+use here the simple, non-unitary convention
+\begin{itemize}
+\item Definition: $F(X) = \int_{-\infty}^{+\infty} f(x) e^{-2i\pi x X} dx$
+\item Linearity:  $h(x) = a f(x) + b g(x)$, then $H(X) = a F5X) + b G(X)$
+\item Translation:  $h(x) = f(x-x_0)$, then $H(X) = e^{-2i\pi x_0 X} F(X)$
+\item Shifting: $h(x) = e^{2i\pi x X_0} f(x)$, then $H(X) = F(X-X_0)$
+\item Scaling: $h(x) = f(ax)$, then $H(X) = \frac{1}{|a|}F(\frac{X}{a}$
+(the so-called \textit{time reversal} property is obtained with $a=1$
+\item Conjugation: if $h(x) = \bar{f(x)}$, then $H(X) = \bar{F(-X)}$
+\item Integration: With $X=0$ in the definition\\
+$F(0) = \int_{-\infty}^{+\infty} f(x) dx$
+\item Convolution: $h(x)= f(x) * g(x)$ then $H(X) = F(X) G((X)$. \\
 The Fourier Transform of a product of two functions is the convolution of
 the Fourier Transforms of the functions.
+\item Uncertainty principle:  the more concentrated $f(x)$ is, the 
+more spread out its Fourier transform $F(X)$ must be. In particular, 
+the scaling property of the Fourier transform may be seen as saying: if 
+we squeeze a function in $x$, its Fourier transform stretches out in $X$. 
+It is not possible to arbitrarily concentrate both a function and its 
+Fourier transform. 
+\end{itemize}
+The definition, illustrated here with scalars, also holds for $x,X$ 
+being 2-D vectors in Euclidean space, the product in the definition 
+being a standard dot product of these vectors. 
+
 
 % \backmatter{} % for BOOKS only
 

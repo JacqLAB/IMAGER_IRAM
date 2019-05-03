@@ -138,13 +138,15 @@ significant improvements to the calibration solution in the case of
 higher than expected background noise, or in the presence of 
 convolutional artifacts around objects, especially point sources.
 
+
+
 \subsection{Implementation}
 
 The typical procedure for self-calibration consists in an iterative 
 process based on the following steps:
 \begin{enumerate}\itemsep 0pt
-\item \comm{UV\_MAP}{/SELF} $+$ \com{CLEAN} $+$ 
-\comm{UV\_RESTORE}{/SELF}: from the classically calibrated (and 
+\item \comm{UV\_MAP}{/SELF} + \com{CLEAN} + \comm{UV\_RESTORE}{/SELF}: \\
+from the classically calibrated (and 
 preliminarily flagged) data, define an initial source model through a 
 conservative (not too deep) first deconvolution : the model consists of 
 a reasonably modest number of CLEAN components.
@@ -161,7 +163,7 @@ iterate until the solution is satisfactory.
 Phase-only self-calibration is less stringent on the signal-to-noise 
 ratio (SNR) threshold than amplitude self-calibration, and it should 
 therefore be attempted first. For phase self-calibration to work, the 
-SNR values in the initial data should be at least of $SNR > 3$ per 
+SNR values in the initial data should be at least of \texttt{SNR>3} per 
 antenna (in a solution interval shorter than the time for significant 
 phase variations for all baselines to a single antenna). The SNR 
 threshold in the initial image depends on the number of antennas and on 
@@ -174,10 +176,10 @@ be eventually attempted in a subsequent step.
 
 Self Calibration is available in \imager{} through the command 
 \com{SELFCAL}, which uses an iterative scheme driven by a script 
-(gag\_pro:p\_selfcal.ima).  From the above principle, the script 
-controls
-  a) the number of iterations
-  b) the number of selected clean components at each iteration
+\texttt{(gag\_pro:p\_selfcal.ima)}.  From the above principle, the script 
+controls\\
+  a) the number of iterations\\
+  b) the number of selected clean components at each iteration\\
   c) the time scale of the solution, i.e. the integration time
   over which the gains are assumed to be constant
 
@@ -185,20 +187,20 @@ The parameters of the command \com{SELFCAL} are available as
 \sicvar{SELF\_Names} \sic{} variables.  The script uses the commands 
 \com{UV\_MAP}, \com{CLEAN}, and  \com{SOLVE} and \com{APPLY} from the 
 \lang{CALIBRATE} language. By default, a solution is searched for the 
-phase calibration only (\sicvar{SELF\_MODE} $=$ \texttt{PHASE}), and 
+phase calibration only (\sicvar{SELF\_MODE}\texttt{=PHASE}), and 
 the number of iterations is 3 (\sicvar{SELF\_LOOP}). For each 
 iteration: 
 \begin{itemize}\itemsep 0pt
 \item All components found by \com{CLEAN} are kept by default 
-(\sicvar{SELF\_NITER}$=0$), but for simple source structures, 10 components only 
+(\sicvar{SELF\_NITER}\texttt{=0}), but for simple source structures, 10 components only 
 may be enough (the maximum number \sicvar{NITER} of  CLEAN components to 
 subtract is automatically guessed by the program in the default 
 process, see \sicvar{CLEAN\_NITER} and other usual clean convergence control 
 variables),
 \item the minimum flux density per pixel to be considered by CLEAN can 
-be defined (SELF\_MINFLUX $=0$) 
+be defined (\sicvar{SELF\_MINFLUX}\texttt{=0}) 
 \item The ''integration'' times (gain averaging) are fixed to a default 
-value SELF\_{TIMES}$=45$\,s (minimum value for NOEMA, while it is only 
+value \sicvar{SELF\_TIMES}\texttt{=45}\,s (minimum value for NOEMA, while it is only 
 6\,s for ALMA). This can be adapted for each loop (in general, one 
 should start with larger solution times, depending on the SNR values 
 and try to decrease it in order to better sample the atmospheric 
@@ -213,9 +215,9 @@ dimension. If any of the \sicvar{SELF\_NITER} and/or
 accordingly changed by \com{SELFCAL} each time one of these arrays is 
 resized. For instance, the following command allows to define 5 loops 
 with an integration time for solution of 45\,sec:
-\begin{verbatim}
-let Self_times 45 45 45 45 45 /resize
-\end{verbatim}
+
+\texttt{let Self\_times 45 45 45 45 45 /resize}
+
 \sicvar{SELF\_NITER} and \sicvar{SELF\_MINFLUX} are automatically enlarged
 to the same size if, and only if, they were already constant.
 By default, all channels are averaged to compute a 
@@ -247,16 +249,18 @@ These quantities are stored in the \sicvar{SELF\_DYNAMIC} and
 defined as the ratio of the peak flux density value to the noise in the 
 clean map (automatically estimated with the command \com{STATISTIC}). 
 The  minimum signal to noise ratio value (for an antenna) for a valid 
-solution is \sicvar{SELF\_SNR}$=6$ by default. 
+solution is \sicvar{SELF\_SNR}\texttt{=6} by default. 
 
 \com{SELFCAL} can be controlled through a widget, using
 command \comm{SELFCAL}{/WIDGET} (see Figure \ref{fig:selfcal}) 
+
 \begin{figure}
   \centering
   \includegraphics[width=10cm]{selfcal-widget.png}
   \caption{The Self-Calibration widget
 \label{fig:selfcal}}
 \end{figure}
+
 
 
 It is possible to visualize the computed corrections with the command 
@@ -314,9 +318,9 @@ initial peak position, and the bias will be of order of the noise.
 This may be inappropriate. 
 Currently, the validity of the self-calibration solution is based on 
 the estimated signal to noise ratio for the gains at each time step. 
-If that SNR is below a user-controlled threshold (by default, \sicvar{SELF\_SNR}$=6$), 
-the corresponding data is flagged (default value: \sicvar{SELF\_FLAG}$=$\texttt{YES}) 
-or kept WITHOUT self calibration (if \sicvar{SELF\_FLAG}=\texttt{NO}). 
+If that SNR is below a user-controlled threshold (by default, \sicvar{SELF\_SNR}\texttt{=6}), 
+the corresponding data is flagged (default value: \sicvar{SELF\_FLAG}\texttt{=YES}) 
+or kept WITHOUT self calibration (if \sicvar{SELF\_FLAG}\texttt{=NO}). 
 %
 \item [Flagging or not flagging ?] 
 The decision to flag or not results from a trade-off:
@@ -359,7 +363,7 @@ It also remains to be checked with the PolyFIX NOEMA correlator.
 \com{UV\_PREVIEW} can warn you about potential issues in this respect. 
 The appropriate scaling factor can be specified by variable \sicvar{SELF\_SNOISE}.
 
-\subsubsection{Advanced use}
+\subsection{Advanced use}
 
 \paragraph{Amplitude self calibration}
 The amplitude calibration (\comm{SELFCAL}{AMPLI}) is a secondary step in the self-calibration process.
@@ -373,7 +377,41 @@ automatically adjusts the gains so that their mean is 1, in order to
 avoid changing the flux scale. In practice, it is useless if the expected noise
 limited dynamic range is less than about 300.
 
+\paragraph{Cases where Amplitude self calibration may be essential}
+If \texttt{PHASE} self-calibration does not sufficiently improve the image
+despite ample signal-to-noise, Amplitude self calibration may do it. 
+This situation often occurs when the observations span different dates,
+so that the relative flux calibration between the separate dates is 
+inconsistent. In this case, a \texttt{AMPLI} self-calibration may
+be of great help. The flux consistency scale across dates can be
+also checked and cured using command \com{SCALE\_FLUX}.
+ 
+Note however that the resulting improvement does not a higher fidelity
+image. It removes the inconsistencies, but the selected (average) flux scale
+has no guarantee to be good. Flux calibration should be independently
+checked if this situation occurs.
+
 \paragraph{Support restriction, flux threshold}
-Support restriction in the \com{CLEAN} process may be useful to build a 
-simpler model for very complex, extended sources only.  Similarly, limiting
-the flux per pixel in the model may help.
+Support restriction in the \com{CLEAN} process may be needed to build a 
+simpler model for very complex, extended sources only.  Command \comm{MASK}{THRESHOLD} can
+be useful in this respect. Similarly, limiting
+the flux per pixel in the model (see \sicvar{SELF\_MINFLUX}) may help.
+
+\subsection{Transfering the solution to other \uv{} data sets.}
+An important use of the Self-calibration is to compute a calibration solution
+using wide bandwidth data (\textit{continuum} data, where signal-to-noise can 
+often be maximized) and apply it to high spectra resolution (\textit{line}) data.
+
+The technique is quite simple. Solve for Self-calibration using the wide bandwidth
+data as usual, and save the results (gain tables) using the \comm{WRITE}{CGAINS}
+command (eventually one for each of the \texttt{PHASE} or \texttt{AMPLI} steps of 
+Self-calibration).
+
+At any time, you can read back these gain tables using \comm{READ}{CGAINS}, read
+an \uv{} data set with \comm{READ}{UV} and apply the gain solution using command
+\com{APPLY}.  Since Self-calibration normally corrects for atmospheric errors,
+the derived `phase'' correction is in general here to compensate for a pathlength
+change, i.e. the corresponding phase correction should scale as Frequency.  \comm{APPLY}{DELAY}
+instructs \imager{} to take this effect into account.
+
+ 

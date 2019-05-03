@@ -1,0 +1,514 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+% \usepackage{pdfpages}
+\usepackage{fancyhdr}
+
+% GILDAS specific definitions
+\include{gildas-def}
+
+\makeindex{}
+
+\makeatletter
+\textheight 625pt
+\textwidth 460pt
+\oddsidemargin 0pt
+\evensidemargin 0pt
+\marginparwidth 50pt
+\topmargin 0pt
+\brokenpenalty=10000
+
+% Makes fancy headings and footers.
+\pagestyle{fancy}
+
+\fancyhf{} % Clears all fields.
+
+\lhead{\scshape Guilloteau, 2016}
+\rhead{\scshape \nouppercase{\rightmark}}   %
+\fancyfoot[C]{\bfseries \thepage{}}
+
+\renewcommand{\headrulewidth}{0pt}    %
+\renewcommand{\footrulewidth}{0pt}    %
+
+\renewcommand{\sectionmark}[1]{%
+  \markright{\thesection. \MakeLowercase{#1}}}
+\renewcommand{\subsectionmark}[1]{}
+
+\fancypagestyle{firststyle}
+{
+   \fancyhf{}
+   \fancyhead[C]{Original version at \tt http://iram-institute.org/medias/uploads/imaging-noema.pdf}
+   \fancyfoot[C]{\bfseries \thepage{}}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{IRAM Memo 2016-?\\[3\bigskipamount]
+  IMAGER: Concepts and usage}
+\author{S. Guilloteau$^{1}$\\
+ \vspace{0.3cm}
+  1. LAB (Bordeaux)\\
+ \vspace{0.5cm}
+{\begin{tabular}{lll}
+  14-Jul-2016  -- &  version 1.0 & \\
+  09-Sep-2016  --  & version 1.1  & -- Add "On Going Work" section \\
+  17-Nov-2016  --  & version 1.2  & -- Add the UV\_SHORT task \\
+  17-Oct-2017  --  & Version 1.3  & -- Clean up some variables - Zero spacings \\
+  23-Apr-2018  --  & Version 1.4  & -- Mention SELFCAL and UV\_SHORT command
+ \end{tabular}}
+ }
+\makeindex{}
+
+\begin{document}
+
+\maketitle
+
+%\begin{rawhtml}
+%  Note: this is the on-line version of the ``GREG 2012 UV table format''
+%  document for Gildas users and programmers.
+%  A <A HREF="../../pdf/greg-uvt-v2.pdf"> PDF version</A>
+%  is also available.
+%
+%  Related information is available in:
+%  <UL>
+%  <LI> <A HREF="../greg-html/greg.html"> GREG:</A> Grenoble Graphics
+%  <LI> <A HREF="../sic-html/sic.html"> SIC:</A> Simple Interpretor of Commands
+%  </UL>
+%\end{rawhtml}
+
+\begin{abstract}
+  With the advent of ALMA and NOEMA, the interferometers deliver much
+  larger data sets than initially anticipated for GILDAS software.
+  This document describes a new imaging program called IMAGER
+  1) Wide bandwidth data sets, 2) Mosaics,  3) Short spacings,
+  and 4) Self-calibration, in a (much) simpler and faster way than MAPPING.
+
+  Related documents: \emph{Imager documentation, Mapping documentation}
+\end{abstract}
+
+\newpage
+\tableofcontents{}
+
+\section{Objectives}
+
+The main goals of the IMAGER are
+\begin{enumerate}
+\item to offer a proper implementation of imaging in case of
+wide relative bandwidth, where the natural angular resolution
+changes with frequency.
+\item to implement a simpler (and incidentally faster) scheme to process Mosaics,
+including short spacings from single dish data
+\item to minimize image sizes 
+\item to minimize processing time by using parallel
+programming as much as possible and reducing Input/Output to the strict minimum.
+\item to simplify user interfaces, by providing sensible defaults.
+\item to take advantage of improved capabilities of NOEMA, by offering new
+tools like self-calibration or wide bandwidth analysis.
+\end{enumerate}
+
+\section{Principle}
+
+\subsection{User viewpoint}
+For the user, IMAGER reduces the number of actions to the strict minimum.
+The imaging sequence is always the same
+\begin{verbatim}
+! Read data
+READ UV MyData.uvt /RANGE Min Max Type
+! here, optionally use UV_TIME, UV_COMPRESS, UV_BASELINE
+! or UV_FILTER, UV_CONT to filter lines or remove continuum
+UV_MAP          ! Image
+CLEAN           ! Deconvolve
+! here, optionally use UV_RESTORE
+VIEW CLEAN      ! or SHOW CLEAN     Have a look at the result
+WRITE * MyData  ! Write result if OK
+\end{verbatim}
+IMAGER recognizes whether the UV table is for a single field or a 
+mosaic. The only difference between the single field and mosaic cases 
+is that IMAGER yields a Sky brightness image for Mosaics, but does not 
+automatically correct for primary beam attenuation for Single fields.
+
+For UV\_MAP, imaging parameters are controlled by the MAP\_* variables. 
+Deconvolution parameters are controlled by CLEAN\_* variables.
+Suitable defaults are provided, so that only specific cases should
+require customization by the user.  Parameters can be list by
+commands UV\_MAP ?  and CLEAN ?.
+
+
+
+\section{Mosaics and Short Spacings}
+
+\subsection{Multi-Fields UV table}
+One major step to allow this simplification has been the possibility offered by
+the GDF UV data format version 2 to allow ``extra'' columns, i.e. additional data for
+each visbility. We use it here to store several possible quantities
+\begin{itemize}
+\item  column of type \texttt{code\_uvt\_id} contains a real (actually, only
+integer values are to be found) representing a numerical identification number. This
+typically handles the field number, for example, but the column type is generic.
+\item  columns of types \texttt{code\_uvt\_loff} and \texttt{code\_uvt\_moff}
+contain the phase offsets (from the phase center)
+\item  columns of types \texttt{code\_uvt\_xoff} and \texttt{code\_uvt\_yoff}
+contain the pointing offsets (from the pointing center).
+\end{itemize}
+If the phase offset columns are present, but the pointing offset columns
+are not present, the pointing centers are assumed to be identical to the 
+phase centers. This naturally happens for data taken by all interferometers 
+(NOEMA, ALMA, JVLA, ...).
+
+\subsubsection{Importing from UVFITS}
+
+To import UVFITS files, some trick is needed because the UVFITS format 
+provided by other packages (mostly CASA) has some specific structure 
+and implicit assumptions that do not map directly to the GILDAS UV data 
+format. Specifically, UVFITS provides for each visibility an ID number 
+corresponding to the source coordinates given in a  FITS  binary table 
+named "SU".
+
+Thus, importing cannot be done through a simple command, and
+is done only through the \texttt{fits\_to\_uvt.map} script
+The UV table is temporarily created with two additional columns, one of which is holding
+the source ID number, and after the SU Table is read, these two columns are filled with
+the phase offset centers, and labelled of type \texttt{code\_uvt\_loff} and
+\texttt{code\_uvt\_moff} respectively.
+As UVFITS provides absolute coordinates, and not offset, the first field center is arbitrarily
+taken as the reference for offsets. This may change for a more convenient value
+(e.g. the centroid) later. If only one field is found, the columns are simply labelled
+as type \texttt{code\_uvt\_id} so that they remain ignored in any further processing.
+
+\textbf{NOTE: }\textit{the UVFITS format allows for cases where the SU tables also
+provide pointing centers. So far, this has not been implemented in any known FITS writer,
+and CASA does not support this possibility. However, once GILDAS UV tables have been
+converted to a common phase center (Mosaic UV tables with only pointing offsets, see
+below), this possibility may be required to export simply the data into UVFITS format for
+archival. The current code does not allow this yet.}
+
+
+\subsubsection{Importing from CLIC}
+
+CLIC can produce multi-field UV tables. This is done using command
+\begin{verbatim}
+  TABLE [MyTable [Old|New]] /MOSAIC
+\end{verbatim}
+which adds the phase offset columns and automatically avoids checking
+pointing and phase offsets in the selected observations.
+
+Note: the /MOSAIC option replaces the experimental /POSITION option.
+The same result can also be obtained for spectral line
+data only (SET SELECTION LINE) through the  command
+\begin{verbatim}
+  SG_TABLE [MyTable [Old|New]] /ADD L_PHASE_OFF M_PHASE_OFF /NOCHECK POINT PHASE
+\end{verbatim}
+
+\subsubsection{Importing from separate fields.}
+
+It is also possible to merge UV tables corresponding to separate fields into a
+multi-field UV table by using task UV\_MOSAIC. The same task can also do the splitting
+per field (for test purpose).
+
+\subsection{Multi-Field UV\_MAP processing}
+
+When UV\_MAP encounters more than 1 field in a UV Table, it first verifies whether
+phase (\texttt{code\_uvt\_loff \& code\_uvt\_moff}) or pointing 
+(\texttt{code\_uvt\_xoff \& code\_uvt\_yoff})
+offsets are present.  In case phase offsets are present, UV\_MAP first automatically process
+the UV table to recenter it onto a common phase center, and converts the offsets
+to pointing offsets. Here, the centroid of all fields is used by default as phase
+center (this action is obtained by implicitely calling the UV\_SHIFT command). 
+When pointing offsets are present, this step is no longer required and
+imaging can proceed immediately. 
+
+Dirty and primary beams are frequency sliced in "chunks" as for single fields.
+
+SHOW FIELDS (or VIEW FIELDS) can display the observed pointing centers.
+
+
+\textit{The display of frequency dependent beams is still to be implemented for
+Mosaics, as SHOW or VIEW only handles 3-D data cubes.}
+
+With such data, UV\_MAP automatically activates the MOSAIC mode for further image processing.
+
+\textit{\textbf{Caution:} The MOSAIC mode is not yet automatically turned off
+if a single-field UV table is processed.}
+
+\subsection{Multi-Field CLEANing}
+
+Apart from the proper selection of possibly frequency dependent beams, there has been no
+change here. The new UV\_MAP command produces the same results as the old system using imaging
+of separate fields and mosaicing through the MAKE\_MOSAIC task.
+
+\subsection{Short Spacings}
+
+Short Spacings in IMAGER is now also handled by a command instead 
+of a set of tasks in MAPPING.  The processing sequence is the following:
+\begin{itemize}\itemsep 0pt
+\item READ UV  FileWithoutShortSpacings\\
+Read the original UV data set
+\item READ SINGLE  SingleDishDataFile \\
+Read the Single Dish data file. It can be a CLASS Table (extension .tab)
+or a 3-D data cube in LMV order (Velocity as 3rd axis). 
+\item UV\_SHORT\\
+Process the Single Dish data, extract short spacing visibilities,
+merge with curren UV data set to produce a combined UV data set.
+\end{itemize}
+The output of command UV\_SHORT becomes the current UV data, and can
+be handled as usual with UV\_MAP, WRITE UV, etc...
+
+The UV\_SHORT command as the following features:
+\begin{itemize}\itemsep 0pt
+\item Minimal interface: mosaic characteristics are recovered
+from the mosaic-like UV table, and telescope characteristics from the telescope section
+of the UV table and Single-dish data if present.
+\item Automatic recognition of offset types (phase or pointing)
+\item Automatic rescaling of the short spacings weights, but under user control.
+\item Automatic fall-back on Zero spacings if the single-dish diameter
+is identical to the diameter of the interferometer antennas.
+\end{itemize}
+The command checks the spectral axis consistency, but does not automatically
+re-interpolate the Single Dish data spectra onto the UV spectral axis.
+
+\section{Imaging}
+
+\subsection{Control parameters}
+The UV\_MAP command is controlled by a set of SIC variables of names starting by MAP\_
+\begin{tabular}{lll}
+%\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+% \> MAP\_ANGLE \>  Position angle of map axis when MAP\_SHIFT is set \\
+& MAP\_BEAM\_STEP &  Number of channels per common dirty beam, if $> 0$. If 0, only one \\
+                & & beam is produced in total. If $-1$, an automatic guess is performed \\
+                & & from the map size and requested precision (MAP\_PRECIS). \\
+& MAP\_CONVOLUTION  &  Convolution mode (default 5) (old name CONVOLUTION) \\
+& MAP\_CELL    & Pixel size in arcsecond \\
+% & MAP\_DEC     & Declination of new map center  \\
+& MAP\_FIELD   & Image size in arcsecond \\
+& MAP\_PRECIS  & Position precision at edge of image, in fraction of pixel size. Default\\
+                & & is 0.1. \\
+& MAP\_POWER   & Rounding scheme for default image size, to numbers like 2\^n 3\^p 5\^q. \\
+  & & p and q are less or equal to MAP\_POWER. \\
+% & MAP\_RA      &   Right ascension of new map center \\
+& MAP\_ROBUST  &   Robust weighting factor, in range 0 - infty.  Default 1.0. (Old name \\
+      &  & UV\_CELL[1]) \\
+      &  &  0 means  Natural weighting (as infty, actually) \\
+& MAP\_ROUNDING  & Tolerance to round image size by floor instead of ceiling. \\
+%& MAP\_SHIFT    &  Logical indicating whether the phase center must be shifted and/or \\
+%                & & the image rotated (old name UV\_SHIFT). \\
+& MAP\_SIZE     &   Image size in pixels \\
+& MAP\_TAPEREXPO &  the taper exponent. Default 2 (Old name TAPER\_EXPO). \\
+& MAP\_UVCELL   &  UV Cell size for Robust weighting. Default is 0, meaning that the \\
+              & & cell size is derived from the antenna diameter. (Old name \\
+              & & UV\_CELL[2]) \\
+& MAP\_UVTAPER &   Array of 3 values giving  the UV taper in m (first two values), its \\
+                & & position angle (third value).  Default (0,0,0). (Old name \\
+                & & UV\_TAPER[3]). \\
+& MAP\_VERSION &  Version of code to be used. This is a temporary variable to allow \\
+                & & comparison between the new and old codes without quitting \\
+                & & MAPPING. \\
+%\end{tabbing}
+\end{tabular}
+
+In addition, WCOL indicates the weight channel and MCOL the channel range to be imaged.
+However, WCOL should in general be set to zero to allow the beam steps to be set.
+
+\subsection{Defining the Projection Center of the image}
+
+The scheme for shifting the phase center of images has been modified, because of
+improvements required for large scale Mosaics.  Command UV\_MAP now handles phase 
+shifting through its arguments, or through the string variable MAP\_CENTER.
+
+The scheme for shifting the phase center of images has been modified, because of
+improvements required for large scale Mosaics. 
+Command UV\_SHIFT was introduced to phase shift Mosaics to a
+common phase center in Mosaic. It also works for single fields if needed,
+but this command is deprecated as the mechanism should be modified
+for large field mosaics.
+
+The old code can still be executed by setting MAP\_VERSION = -1. MAP\_VERSION set to 0
+(the default) uses the new code, and MAP\_VERSION = 1 allows access to an intermediate
+version. For phase center shifting, the old code  still requires the use of the
+variables MAP\_RA, MAP\_DEC, MAP\_ANGLE and UV\_SHIFT.
+
+
+\section{Implementation issues}
+
+The new implementation of the UV\_MAP command uses most of the older code,
+but re-arranged such that ensembles of contiguous channels
+(``chunks'') are treated at once and share the same synthesized beam.
+Deconvolution with CLEAN then proceeds by using the synthesized beam with the
+appropriate frequency for each channel. The user can control the
+``chunk'' size, and hence the precision of the process given the
+desired field of view.
+
+As a result of the new concept, beams (whether primary or synthesized) can be 4-D
+arrays, as they may depend on Frequency and Field.
+
+\section{Deconvolution}
+ 
+\subsection{CLEAN}
+Progress has been made on automatic guess for Cleaning parameters, and 
+a renaming of the parameter names is proposed. The table below is the 
+current renaming scheme, with previous names mentionned in 
+parentheses. It is proposed that the equivalent Old names 
+(mentionned in Upper case below) will remain as aliases, while those
+mentionned in mixed case  will disappear as they were seldom used before. 
+ 
+\begin{tabbing}
+\hspace{0.2cm} \= \hspace{4.2cm} \= \kill
+\> CLEAN\_ARES  \>  Absolute residual  (ARES) \\
+\> CLEAN\_FRES  \>  Fractional residual (FRES) \\
+\> CLEAN\_GAIN  \>  Loop gain  (GAIN) \\
+\> CLEAN\_INFLATE \> Inflation factor allowed to display MultiScale clean components \\
+\> CLEAN\_METHOD \>  Cleaning Method  (METHOD) \\
+\> CLEAN\_NCYCLE \>  Maximum number of Major cycles (Nmajor) \\
+\> CLEAN\_NITER \>  Maximum number of iterations (NITER) \\
+\> CLEAN\_NKEEP \>  Number of iterations used to check convergence (see below)\\
+\> CLEAN\_POSITIVE \> Minimum number of positive Clean components \\
+\> CLEAN\_SEARCH \>  Minimum primary beam threshold for searching (Search\_W) \\
+\> CLEAN\_RESTORE \>  Minimum primary beam threshold for restoring  (Restore\_W) \\
+\> CLEAN\_SPEEDY \> Speeding factor for Clark (Spexp) \\
+\> CLEAN\_WORRY \> "Worry" factor for Clark (Worry) \\
+\> CLEAN\_SMOOTH \> Smoothing factor for Multi Scale Clean (Smooth) \\
+\> CLEAN\_RATIO \> Ratio for  Dual Resolution clean (Ratio) \\
+\> CLEAN\_NGOAL \> A number of components for ALMA joint deconvolution only (Ngoal)\\
+\end{tabbing}
+
+Clean convergence is controlled by the usual ARES, FRES and NITER criteria,
+plus CLEAN\_MAJOR for methods with major cycles. However, these criteria
+can be set to 0, allowing Mapping to automatically guess when to stop.
+In this case, convergence is controlled by CLEAN\_NKEEP, which is 
+a number of components. Deconvolution of a given channel stops if
+the cumulative flux at iteration number N is smaller (resp. larger) than at iteration
+N-CLEAN\_KEEP for positive signals (resp. negative). In essence, CLEAN\_NKEEP
+is the number of components when only noise is present. Experimentation
+with various types of images have shown that CLEAN\_KEEP = 70 is
+a good compromise. 
+
+\section{Self Calibration}
+
+Self calibration (phase and, if needed, amplitude) has been implemented
+through the SELFCAL command and CALIBRATE$\backslash$ Languages.
+
+The implementation uses the SELFCAL command, whose parameters
+are available in the as SELF\_Names SIC variables. 
+SELFCAL also uses the UV\_MAP and CLEAN input parameters. 
+SELFCAL actually activates a script using elementary commands UV\_SELF,
+SOLVE and APPLY of the CALIBRATE$\backslash$ language.
+
+Self calibration works for Phase and Amplitude. For amplitude, the
+scalar gain is de-biased from the noise to preserve flux calibration
+(see Fig.\ref{fig:self}), using a correction of -0.5*(Noise/Signal)$^2$.
+
+\begin{figure}[!h]
+\centering
+    \includegraphics[width=0.8\textwidth]{ampnoise.pdf}
+    \caption{Effective de-biasing of the Amplitude gain as
+    a function of Signal to Noise. The second order correction
+    gives an excellent precision for all sensible values
+    of the Signal to Noise ($> 2$) .}
+    \label{fig:self}
+\end{figure}
+
+
+
+\section{Visualisation}
+
+Results are displayed using commands SHOW (channel-like display) or VIEW
+(compact comprehensive display)
+
+\subsection{Input parameters}
+
+The implementation has been made in such a way that the name changes
+between MAPPING and IMAGER do not break habits (as far as possible...).
+
+The scheme is the following. A Fortran derived type handles all UV\_MAP
+associated parameters, and SIC variables are pointing directly towards one instance
+of this derived type, handling all default values.  Command UV\_MAP converts
+the default values to actual values. Command UV\_STAT SETUP does the same. Both
+use the same routines.
+
+A second set of instances of the same Fortran derived type is used as target
+for the old SIC variables, so that the code can check whether the user has been
+modifying these ones instead of the new ones, and a warning is issued in such cases.
+Both instances are made identical after each UV\_MAP command.
+
+The only exception is WEIGHT\_MODE, which has no meaning in the new implementation,
+where MAP\_ROBUST encompasses all possibilities.
+
+The  \texttt{define.map} script as been changed to provide an implementation which
+is independent of the MAPPING version.
+
+\subsection{Handling Large Files}
+With ALMA or NOEMA, files can be large. We are not changing our paradigm
+but still keep copies in Virtual memory for processing in Mapping. 
+
+However, it became critical to avoid multiple copies which would lead
+to excessive memory usage. 
+The main ``memory-hungry'' tools were the visualisation commands, VIEW
+and SHOW (and their disk-based equivalent GO VIEW and GO BIT). Code cleaning
+to avoid useless copies has been made. It is now possible to use 
+the same scripts to display disk-based files, or program built-in 
+SIC Image variables. 
+
+Another major tool to minimize memory usage is the ability
+to read only selected channels of an input UV table.
+
+\section{Additional Capabilities}
+
+Data size reduction routines:
+\begin{itemize}
+\item UV\_TIME  can be used to time-average the UV data set, leading
+to faster processing
+\item UV\_RESAMPLE allow spectral smoothing and resampling
+\item UV\_COMPRESS is a simpler version, with only channel averaging
+\end{itemize}
+
+Continuum processing commands:
+\begin{itemize}
+\item UV\_FILTER and UV\_BASELINE allow to filter line emission, or
+conversely to remove continuum baseline.
+\item UV\_PREVIEW attempts to find automatically the continuum level
+and part of the bandwidth with line emissions.
+\item UV\_CONTINUUM converts a spectra line UV table into a bandwidth 
+synthesis continuum UV table. UV\_CONTINUUM requires some knowledge of 
+the image size to evaluate how many channels should be averaged 
+together. This is done using the same routine as in UV\_STAT SETUP. 
+Optimization of the evaluation of the Min-Max baseline length has also 
+been made.
+\end{itemize}
+
+
+
+\section{On going work}
+
+Although all functionalities are now available, they are not yet fully integrated
+in a comprehensive, simple, way. This section describes the required developments
+still missing for a simple, fully integrated usage by users. They are ordered
+by decreasing priority.
+
+
+\subsection{Widgets}
+Once all the above tools are ready,  it will be useful to refurbish the 
+widgets for an efficient use of the new capabilities. Only tests have 
+been performed at this stage, but it should be remembered that the new 
+method basically does everything with 4 command lines (READ;  UV\_MAP; 
+CLEAN; WRITE) except for the short spacings issue. 
+
+\subsection{Mosaic and FITS export}
+Mosaic with pointing offsets (and thus a common phase center) cannot be 
+correctly exported through UVFITS. They must be re-processed back to 
+pointing center offsets, but there is no such tool yet.
+
+In fact, to avoid smearing effects to the projection of the sphere
+on a plane for wide field Mosaics, the current scheme to handle
+mosaics should be changed. The optimal scheme only involves
+the so called "phase offset" representations (where pointing centers
+and phase centers are identical) with a reprojection only at the
+UV\_MAP stage.
+
+Once this scheme is implemented, the need to re-process back
+"pointing offsets" mosaic UV table will disappear. 
+
+\subsection{New Tools}
+
+IMAGER  allows to test new facilities.
+These are in a separate language, NEWSTUFF$\backslash$. 
+
+\end{document}

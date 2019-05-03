@@ -1,0 +1,78 @@
+\section{Polarization Handling}
+\label{sec:polar}
+
+\imager{} recognizes and handles polarization at different levels.
+Support for polarization is currently experimental and limited, 
+but continuously improving.
+
+\paragraph{Importing data}
+When importing data, the \texttt{fits\_to\_uvt} script assumes by default
+the data is unpolarized and produces the pseudo-polarisation
+state "None" from the UVFITS file, by a properly weighted combination
+of the two parallel hand states if more than one state is present.
+
+Full polarization information can be preserved by adding the 
+\texttt{/STOKES} option to the \texttt{@ fits\_to\_uvt} command. 
+
+The \com{READ}\texttt{ UV} command will read data with any
+polarization state(s).
+
+\paragraph{Processing data}
+On the contrary, practically all \imager{} commands cannot handle 
+more than 1 polarization state. 
+
+Most commands will flatly refuse to handle data with more than 
+1 polarization state (e.g. \com{UV\_FILTER}, \com{UV\_RESAMPLE}, etc\ldots).
+
+For debugging purpose, some commands like \com{UV\_PREVIEW}, \com{UV\_MAP}
+or \com{UV\_STAT} will operate with more than 1 polarization state,
+but will not produce meaningful results (only a subset of the data
+may be treated).
+
+So far, there are only two commands that fully support polarized
+data: \com{UV\_TIME} and \com{STOKES}.
+\begin{itemize}
+\item \com{STOKES} is the primary command that allows to derive or extract 
+a UV data with only one Stokes parameter from a UV data set with 
+several polarization states. \imager{} can then process the 
+individual Stokes parameters separately.
+\item For convenience (because polarized data is obviously in general
+bigger), the \com{UV\_TIME} command can be used for time averaging
+prior to use of the \com{STOKES} command.
+\end{itemize}
+
+Some imaging strategies cannot be used on polarized data. Self-calibration
+requires a totally different approach that is not available in \imager{}.
+Also, the automatic definition of supports (\comm{MASK}{/THRESHOLD}) 
+can only be done on Stokes I or parallel hand polarization states, not
+on Stokes Q,U,V or cross-hand states. The same applies to spectral
+line identifications.
+ 
+\paragraph{Analysing data}
+Sorry, so far \imager{} offers no integrated tools to derive e.g.
+polarization fraction, or polarization vector directions. This may
+come later !...
+ 
+\subsection{The STOKES command}
+
+The \comm{STOKES}{/FILE} command operates only on files. It allows
+to extract a UV data with visibilities for one output (pseudo-)Stokes 
+parameter from UV data with visibilities with 1,2 or 4 (pseudo-)Stokes
+parameters. Besides the standard Stokes parameters I, Q, U, V, RR, 
+LL, RL, LR (Left and Right circular), XX, YY, XY and YX (X and Y
+linear) which are defined in the Sky frame,
+command \com{STOKES} recognizes pseudo-Stokes values NONE, HH, VV,
+HV and VH which are the linear polarization states in the frame
+of the antennas (Horizontal and Vertical pure states).
+
+Conversion from the H-V pseudo-Stokes polarization states to any standard
+Stokes parameter is made by the \com{STOKES} command by applying 
+the rotation due to the parallactic angle. For this, the UV data set
+must contain the \texttt{PARA\_ANGLE} extra column. If it is not present,
+it can be added to the data set by command \comm{UV\_ADD}{/FILE}.
+That command can also insert the Doppler correction as an extra
+column.
+
+Ultimately, a similar DD, GG, DG and GD pseudo-Stokes polarization set
+will be added for circular polarization (D is the first letter for
+Droite in French, and G for Gauche). 

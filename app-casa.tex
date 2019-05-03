@@ -1,0 +1,144 @@
+\section{IMAGER versus CASA}
+\label{app:imager-casa}
+
+\subsection{Imaging Philosophy and Data Architecture}
+CASA intends to solve the \textit{Measurement Equation}, whatever the
+complexity of this process.  It is a all-in-one package for this purpose,
+where calibration and imaging are deeply intermixed and use a
+unified data format.
+As a result, a CASA Measurement Set is a complex architecture
+encompassing relations between many components stored as Tables
+in a directory-like tree. It can handle calibrated data, calibration
+tables, multisource data sets, raw data and final images
+in the same architecture,
+allowing to retain all information to process complex images, such
+as multi-frequency synthesis of polarized emission observed in
+a mosaic of fields.
+
+On the contrary, \gildas{} is designed to break the process in 
+totally independent steps. For IRAM data, calibration is done
+in one program (CLIC for interferometry with \NOEMA{} or 
+CLASS for single-dish with the 30-m),
+and imaging in another (here \imager{}), with a clear intermediate step
+to change from the calibration data format (using the CLASSIC container)
+to UV Tables or CLASS Tables. In particular, \imager{} does not
+handle polarization transparently at the current time: 
+polarization states must be imaged independently.
+The Gildas Data Format stores a limited
+number of informations in a single binary data file with a compact binary
+header, and is only suited for calibrated data.  UV Tables
+are little more elaborate than simple images, but still limited
+in complexity. 
+
+\subsection{Frequency and Velocity scales}
+In the \ALMA{} use of CASA, all observations are kept in the Observatory
+frequency frame, and only converted to  a celestial reference frame
+(such as the Local Standard of Rest, \texttt{LSRK}) at later stages, during
+imaging if requested.
+
+\gildas{} is more analysis oriented, and contains a dual interpretation 
+of the frequency axis.  This axis can either be interpreted with
+a Velocity scale, usually in the \texttt{LSRK} frame relative to a spectral
+line rest frequency, or as a Rest Frequency, with the astronomical
+source velocity specified. The choice of representation depends
+on the astronomer's science objective:  astronomical object study
+(in which case the Velocity representation is more appropriate)
+or chemical composition study (in which case the Rest Frequency
+representation is preferred).
+
+\subsection{Transfering UV data from \casa{}}
+
+The basic idea of data transfer at this stage is to transfer
+a whole spectral window to \gildas{}, and use the simpler and faster
+tools available in \imager{} for extracting channels, resampling,
+subtracting continuum, etc... rather than doing that in \casa{}.
+
+\subsection{In CASA}
+The steps in CASA involve
+\begin{enumerate}
+\item Separating spectral windows and different sources into 
+independent (temporary) MS
+\item Getting rid of flagged data 
+\item Setting the velocity reference frame and correcting
+for Doppler motions
+\item Exporting to UVFITS 
+\item Removing the intermediate MS
+\end{enumerate}
+The intermediate MS is created using \textit{mstransform},  with 
+\texttt{keepflags=False, regridms=True, outframe='LSRK'}. Source and 
+spectral window identification is done using keywords \texttt{spw} and 
+\texttt{field}, and an appropriate rest frequency is specified (in MHz) 
+using \texttt{restfreq}. Finally, \textit{exportuvfits}  is used on the 
+simple intermediate MS. \imager{} provides to \casa{} a tool named
+\textit{casagildas()} that scans the content of the Measurement Set
+(using \textit{listobs()} to automatically do this on all combinations
+of spectral windows and sources.
+
+\subsection{In \imager{} }
+
+The script \texttt{@ fits\_to\_uvt} handles the conversion from
+UVFITS to \uv{} table format.
+The steps in GILDAS involve
+\begin{enumerate}
+\item Converting UVFITS to UVT
+\item Collapsing the polarization information
+\item Adjusting the weights to properly estimate the noise
+\item Identify and flag bad data
+\item Setting the frequency and velocity references
+\end{enumerate}
+It also handles some nasty details, like the source coordinates
+being hidden in different places depending on the \casa{} version.
+
+\begin{itemize}
+\item Step 1 \\
+\texttt{fits 'name'.uvfits to 'name'.uvt}\\
+will create a GILDAS UV table from the UVFITS file. The signal
+is assumed to be unpolarized at this stage. With the /STOKES
+option, polarization information would be carried on properly at this stage.
+\item Step 2 
+This step is only needed with the /STOKES option. It could be
+done manually by \\
+\texttt{run uv\_splitpolar} \\
+that collapses the polarization information. The desired 
+polarization state should be set to \texttt{NONE} to optimize signal to noise
+ratio for unpolarized sources, to \texttt{I} if polarization
+is a concern.
+\item Step 3
+This step is only carried on if the /WEIGHT option is present. 
+Depending on CASA version, the weights are not handled in the same way. 
+In Casa 3.4, they are approximately correct. In Casa 4.1, they are off 
+by a large factor (perhaps the number of channels...).  Task 
+\texttt{uv\_noise} utilizes the many channels available (3840 per 
+spectral baseband) to compute a statistic per visibility, and adjust 
+the weight through a median scaling factor. Task \texttt{uv\_noise} 
+will also flag data with ``unusual'' weights (deviating from the median 
+by more than some factor (user specified, default 3)).\\ \item Step 4 
+\\ Task \texttt{uv\_trim} will remove the flagged data from the UV 
+table, saving space.
+\item In practice, the optional Steps 2 to 4are handled by a single
+task called \texttt{uv\_casa}, which saves 2 intermediate files
+(and thus 2 read and 2 writes of large files).
+\item Step 5\\
+At this stage, one could start usual imaging using the
+standard Mapping commands \texttt{READ UV 'name'; UV\_MAP}. 
+Commands \texttt{SPECIFY FREQUENCY Value} and \texttt{SPECIFY 
+VELOCITY Value} will set the desired correspondence  between
+Velocity and Frequency axis.
+\end{itemize}
+
+
+
+\subsection{Transfering Image data}
+
+In the Quality Assessment step 2 (QA2), the ALMA ARC staff usually provides one
+or more deconvolved images as FITS files.  These FITS files can readily
+be converted into \gildas{} images with the \sic{} command \com{FITS}: \\
+  \texttt{FITS 'name'.fits TO 'name'.gdf}\\
+They will however have a frequency
+axis labelled in FREQUENCY, while \gildas{} usually works with this
+axis labelled in VELOCITY. 
+They can also be accessed as \sic{} Image variables using command
+\comm{DEFINE}{IMAGE}
+
+In \imager{}, direct display of these FITS files is normally
+possible with commands \com{SHOW} and \com{VIEW}.

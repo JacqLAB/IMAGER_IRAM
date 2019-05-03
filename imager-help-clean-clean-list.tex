@@ -1,0 +1,25 @@
+Basic CLEAN parameters
+CLEAN__GAIN       [       ] Loop gain
+CLEAN__NITER      [       ] Maximum number of clean components
+CLEAN__FRES       [      %] Maximum value of residual (Fraction of peak)
+CLEAN__ARES       [Jy/Beam] Maximum value of residual (Absolute)
+CLEAN__POSITIVE   [       ] Minimum number of positive components at start
+CLEAN__NKEEP      [       ] Min number of components before convergence
+Old names like in MAPPING
+BLC              [  pixel] Bottom left corner of cleaning box
+TRC              [  pixel] Top right corner of cleaning box
+MAJOR            [ arcsec] Clean beam major axis
+MINOR            [ arcsec] Clean beam minor axis
+ANGLE            [ degree] Position angle of clean beam
+BEAM__PATCH       [  pixel] Size of cleaning beam ** not clear **
+Method dependent CLEAN parameters
+CLEAN__INFLATE    [      ] Maximum Inflation factor for UV__RESTORE (MULTISCALE)
+CLEAN__NCYCLE     [      ] Max number of Major Cycles (SDI & CLARK methods)
+CLEAN__NGOAL      [      ] Max number of comp. in Cycles (ALMA method)
+CLEAN__RATIO      [      ] Smoothing factor (MRC default 0: guess, otherwise mus
+CLEAN__RESTORE    [      ] Threshold for restoring a Mosaic (def 0.2)
+CLEAN__SEARCH     [      ] Threshold to search Clean Comp. in a Mosaic (def 0.2)
+CLEAN__SIDELOBE   [      ] Min threshold to fit the synthesized beam
+CLEAN__SMOOTH     [      ] Smoothing ratio: MRC (def 2 or 4)  and MULTISCALE (de
+CLEAN__SPEEDY     [      ] Speed-up factor (CLARK)
+CLEAN__WORRY      [      ] Worry factor (CLARK and MULTISCALE)

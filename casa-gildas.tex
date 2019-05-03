@@ -1,0 +1,229 @@
+\documentclass[11pt]{article}
+
+% GILDAS specific definitions
+\include{gildas-def}
+
+
+\title{IRAM Memo 2014-?\\[3\bigskipamount]
+  From CASA to GILDAS \\
+  II - GILDAS Data Format Version 2}
+\author{S. Guilloteau$^{1}$, E. Chapillon$^{1,2}$, F. Gueth$^{2}$\\
+ \vspace{0.5cm}
+  1. LAB (Bordeaux)
+  3. IRAM (Grenoble)} 
+\date{1-Apr-2014  --   version 1.0}
+\makeindex{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+%\begin{rawhtml}
+%  Note: this is the on-line version of the ``GREG 2012 UV table format''
+%  document for Gildas users and programmers.
+%  A <A HREF="../../pdf/greg-uvt-v2.pdf"> PDF version</A>
+%  is also available.
+%
+%  Related information is available in:
+%  <UL>
+%  <LI> <A HREF="../greg-html/greg.html"> GREG:</A> Grenoble Graphics
+%  <LI> <A HREF="../sic-html/sic.html"> SIC:</A> Simple Interpretor of Commands
+%  </UL>
+%\end{rawhtml}
+
+\begin{abstract}
+  With the advent of ALMA, IRAM users may prefer at some point to handle
+  their ALMA data in GILDAS rather than in CASA\footnote{CASA reference}.
+  This document describes the different ways to do so, and what are the
+  benefits and limitations of the process.
+  This document only covers \textbf{calibrated} ALMA data, either UV data 
+  or images. There is (currently) no plan  to handle uncalibrated ALMA
+  data.
+
+  Related documents: \emph{Mapping documentation}
+\end{abstract}
+
+\newpage
+\tableofcontents{}
+
+% -------------------------------------------------------------------
+\newpage
+
+\section{Introduction}
+%
+ALMA data is delivered from the science archive in  ASDM format.
+Calibration must proceed in CASA, leading to a calibrated measurement set.
+
+At this stage, one can either export the calibrated UV data, through
+a UVFITS file, to GILDAS for further processing, or continue imaging
+within CASA.   Images themselves can also be exported to FITS format
+and simply converted to GILDAS Data Format.
+
+
+\section{Design differences}
+
+\subsection{Imaging Philosophy and Data Architecture}
+CASA intends to solve the \textit{Measurement Equation}, whatever the
+complexity of this process.  It is a all-in-one package for this purpose,
+where calibration and imaging are deeply intermixed and use a
+unified data format.
+As a result, a CASA Measurement Set is a complex architecture
+encompassing relations between many components stored as Tables
+in a directory-like tree. It can handle calibrated data, calibration
+tables, multisource data sets, raw data in the same architecture,
+allowing to retain all information to process complex images, such
+as multi-frequency synthesis of polarized emission observed in
+a mosaic of fields.
+
+On the contrary, GILDAS is designed to break the process in 
+totally independent steps. For IRAM data, calibration is done
+in one program (CLIC for interferometry or CLASS for single-dish),
+and imaging in another (MAPPING), with a clear intermediate step
+to change from the calibration data format (CLASSIC container)
+to UV Tables or CLASS Tables. In particular, GILDAS does not
+handle polarization transparently at the current time: 
+polarization states must be imaged independently.
+The Gildas Data Format stores a limited
+number of informations in a single binary data file with a compact binary
+header, and is only suited for calibrated data.  UV Tables
+are little more elaborate than simple images, but still limited
+in complexity. 
+
+\subsection{Frequency and Velocity scales}
+In the ALMA use of CASA, all observations are kept in the Observatory
+frequency frame, and only converted to  a celestial reference frame
+(such as the Local Standard of Rest, LSRK) at later stages, during
+imaging if requested.
+
+GILDAS is more analysis oriented, and contains a dual interpretation 
+of the frequency axis.  This axis can either be interpreted with
+a Velocity scale, usually in the LSRK frame relative to a spectral
+line rest frequency, or as a Rest Frequency, with the astronomical
+source velocity specified. The choice of representation depends
+on the astronomer's science objective:  astronomical object study
+(in which case the Velocity representation is more appropriate)
+or chemical composition study (in which case the Rest Frequency
+representation is preferred).
+
+\section{Transfering UV data}
+
+The basic idea of data transfer at this stage is to transfer
+a whole spectral window to GILDAS, and use the simpler and faster
+tools available in GILDAS for extracting channels, resampling,
+subtracting continuum, etc... rather than doing that in CASA.
+
+\subsection{In CASA}
+The steps in CASA involve
+\begin{enumerate}
+\item Separating spectral windows into independent MS
+\item Separating different sources into independent MS
+\item Getting rid of flagged data 
+\item Setting the velocity reference frame and correcting
+for Doppler motions
+\item Exporting to UVFITS 
+\end{enumerate}
+
+\textit{split} with keepflags=False   and spw='n'  and field='SourceName'
+\textit{cvel}  with  outframe='LSRK'  and restfreq='value MHz'
+\textit{exportuvfits}  with multisource=False
+
+\subsection{In GILDAS (short recipe)}
+\texttt{@ fits\_to\_uvt FitsFile UVTable FREQUENCY Freq VELOCITY Value LINE Name}\\
+handles the conversion.  
+
+
+\subsection{In GILDAS (details of actions)}
+The steps in GILDAS involve
+\begin{enumerate}
+\item Converting UVFITS to UVT
+\item Collapsing the polarization information
+\item Adjusting the weights to properly estimate the noise
+\item Identify and flag bad data
+\item Setting the frequency and velocity references
+\end{enumerate}
+
+This can be done in MAPPING, using commands or tasks.
+In practice, all required steps 1 to 5 are encapsulated by
+the \texttt{@ fits\_to\_uvt} script, called as\\
+\texttt{@ fits\_to\_uvt FitsFile UVTable FREQUENCY Freq VELOCITY Value LINE Name}\\
+which also handles some nasty details, like the source coordinates
+being hidden in different places depending on the CASA version.
+
+\begin{itemize}
+\item Step 1 \\
+\texttt{fits 'name'.uvfits to 'name'.uvt}\\
+will create a GILDAS UV table from the UVFITS file.
+Polarization information is handled properly at this stage.
+\item Step 2 to 4\\
+Although they can be done through the three tasks
+mentioned below, Steps 2 to 4 are best handled by a single
+task called \texttt{uv\_casa}, which saves 2 intermediate files
+(and thus 2 read and 2 writes of large files).
+\begin{itemize}
+\item Step 2 \\
+\texttt{run uv\_splitpolar} \\
+will collapse the polarization information. The desired 
+polarization state should be set to \texttt{NONE} to optimize signal to noise
+ratio for unpolarized sources, to \texttt{I} if polarization
+is a concern.
+\item Step 3 \\
+Depending on CASA version, the weights are not handled
+in the same way. In Casa 3.4, they are approximately correct.
+In Casa 4.1, they are off by a large factor (perhaps the
+number of channels...).  Task \texttt{uv\_noise}
+utilizes the many channels available (3840 per spectral baseband)
+to compute a statistic per visibility, and adjust the weight
+through a median scaling factor. 
+
+CASA \texttt{exportuvfits} unfortunately writes flagged data, 
+unless these have been removed from the measurement set by
+\texttt{split}. The convention for flagged data is not
+described in the resulting UVFITS file. Task \texttt{uv\_noise} 
+will also flag data with ``unusual'' weights (deviating from the median
+by more than some factor (user specified, default 3)).\\
+\item Step 4 \\
+Task \texttt{uv\_trim} will remove the flagged data from the
+UV table, saving space.
+\end{itemize}
+\item Step 5\\
+At this stage, one could start usual imaging using the
+standard Mapping commands \texttt{READ UV 'name'; UV\_MAP}. 
+Commands \texttt{MODIFY FREQUENCY Value} and \texttt{MODIFY
+VELOCITY Value} will set the desired correspondence  between
+Velocity and Frequency axis.
+\end{itemize}
+
+
+
+\section{Transfering Image data}
+
+In the Quality Assessment 2, the ALMA ARC Staff usually provides one
+or more deconvolved images as FITS files.  These FITS files can readily
+be converted into Gildas images. They will however have a frequency
+axis labelled in FREQUENCY, while GILDAS usually works with this
+axis labelled in VELOCITY. 
+
+However, the standard scripts \texttt{GO BIT} and \texttt{GO VIEW} 
+should normally be able to display these images right away.
+
+The standard command
+\texttt{FITS 'name'.fits TO 'name'.gdf}
+will perform the conversion. 
+
+
+\textbf{TO BE CHECKED}\\
+\texttt{GO MODIFY Header FREQUENCY|VELOCITY Value}
+will temporarily modify the frequency axis of the corresponding
+SIC Header variable to adjust to the desired frame. The Header
+variable can be readonly. Use \texttt{VUE} as variable for \texttt{GO VIEW},
+and \texttt{AAA1} for \texttt{GO BIT}.
+
+Automatic swapping to Velocity axis is available in \texttt{GO VIEW}.
+\textbf{TO BE CHECKED}\\
+The behaviour of \texttt{GO BIT} is not known (yet).
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

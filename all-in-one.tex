@@ -1,0 +1,214 @@
+\section{The "all in one" imager suite}
+\label{sec:all}
+
+With \ALMA{} or \NOEMA{}, you may end up with an observational data set
+that contains several sources, each of them observed with
+a number of spectral windows of different spectral resolutions,
+covering many spectral lines. 
+
+The bookkeeping of such data sets can be intricate. To help the
+users to focus on the science, we have developped a suite of
+scripts that automates the whole imaging process in this case.
+
+These scripts have names starting with \texttt{all-}  and control
+parameters are available in the \sicvar{ALL\%} global structure.
+
+The principle is to gather all UV tables in a sub-directory (named
+\texttt{./RAW/} by default), and to store the results of the
+various processing steps (Self Calibration,  Spectral line
+extraction, Imaging) in different sub-directories (respectively 
+named \texttt{./SELF/, ./TABLES/, ./MAPS/} by default).
+
+Naming conventions apply to identify which data set covers which 
+spectral line. An automatic determination of the continuum
+level is performed: this implies that no spectral line
+confusion should occur.  The case of spectral confusion will be
+handled later.
+
+\subsection{Preparing the data}
+
+For \NOEMA{}, the UV data can be created from the \texttt{.IPB,.hpb}
+raw data files using the \clic{}  script \texttt{@ all-tables}. The 
+resulting UV tables (\texttt{.uvt} files) should be placed in your
+working directory.
+
+For \ALMA{},  UVFITS files should be created from the original Measurement
+Set (\texttt{.ms} directory) using the \texttt{casagildas()} Python tool 
+in CASA, and placed in your working directory. 
+
+Once your working directory is loaded with the \texttt{.uvt} or 
+\texttt{.uvfits} files, you can start using the \texttt{all-widget}
+script.
+
+
+\subsection{The \texttt{all-} scripts}
+
+\subsubsection{Getting started: \texttt{@ all-widget}}
+
+\texttt{all-widget.ima} creates a Widget that is used to customize
+the process and launch the various steps. It also creates
+(through a call to \texttt{@ all-create}) the \sicvar{ALL\%} structure
+and its components.
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=14cm]{all-widget.png}
+  \caption{The All-In-One control widget
+\label{fig:allwidget}}
+\end{figure}
+
+\subsubsection{\texttt{ORGANIZE} step}
+The \texttt{ORGANIZE} button will move the initial files
+(\texttt{.uvfits} and \texttt{.uvt} files) into an appropriate sub-directory
+structure. By default, \texttt{.uvfits} files will be in ./UVFITS/
+(name controlled by \sicvar{all\%uvfits})
+sub-directory, while \texttt{.uvt} files will be in ./RAW/ sub-directory
+(name controlled by \sicvar{all\%raw}).
+
+If absent, the \texttt{.uvt} files will be created from the \texttt{.uvfits} ones.
+
+\subsubsection{\texttt{FIND} step}
+
+The \texttt{FIND} button will explore the directory containing
+the initial UV tables (\texttt{./RAW/} by default) to identify
+\textit{Wide Band} UV tables, i.e. those that cover enough 
+bandwidth to provide enough sensitivity
+for self-calibration on continuum flux.
+
+\textbf{CURRENT LIMITATIONS} \\
+- No check is made on the continuum flux.\\
+- No provision is made to use spectral line flux instead.\\
+
+\subsubsection{\texttt{SELF} step}
+
+The \texttt{SELF} button will use the list of \textit{Wide Band}
+UV tables to compute a (phase and amplitude) Self calibration
+solution, and apply it to all UV tables. It will identify which
+UV tables correspond to a given Wide Band one, so that the proper
+self calibration solution is applied.
+
+The self calibrated UV tables are placed in another sub-directory
+(\texttt{./SELF/} by default, controlled by \sicvar{all\%self}).
+
+A prefix (controlled by \sicvar{all\%prefix\_self}) can be added
+to the file names to remind the user that they have been self-calibrated.
+
+\subsubsection{\texttt{TIME} step}
+
+The \texttt{TIME} button will time average the self calibrated
+UV tables to save space and speed up further processing.
+
+\subsubsection{\texttt{IMAGING} step}
+
+The \texttt{IMAGING} button will scan all spectral windows to
+identify whether they can be used to produce a Continuum or
+spectral line image. 
+
+  Low resolution spectral windows, identified as those whose
+resolution is coarser than \sicvar{ALL\%MINFRES} will be used to
+produce continuum images, by filtering any detected spectral
+signature in the data before.
+
+  High resolution spectral windows, identified as those whose
+resolution is better than \sicvar{ALL\%MINFRES}, will be scanned
+for line identifications. For each spectral line in the current 
+catalog(s) (defined by command \com{CATALOG}) 
+that fall in a spectral window, a continuum-free UV table will be
+created, covering the velocity range specified by the user (by
+variable \sicvar{ALL\%RANGE}) around the line frequency. The naming
+convention is the following:
+\begin{verbatim}
+  original-molecule-I-X
+\end{verbatim}
+where \\
+- \texttt{original} is the name of the initial high resolution
+spectral window\\
+- \texttt{molecule} is the name of the spectral line in the catalog\\
+- \texttt{I} is a sequence number, incremented each time a new
+line is found from the same original UV table.\\
+- \texttt{X} is a character code, equal to \texttt{D} if the line
+is suspected to be detected, and to \texttt{U} if not. When several
+lines are too close together, the \texttt{D} status may be incorrectly
+affected, but this is just a naming convention, not a strong result.
+
+  In addition an
+\begin{verbatim}
+  original-C
+\end{verbatim}
+file that contains line-free emission only is created for each
+original UV table. 
+
+  The imaging results are stored in a specific sub-directory 
+(\texttt{./MAPS/} by default, controlled by \sicvar{all\%maps}). Only 
+the Clean Component Table (\texttt{.cct}) and Clean image 
+(\texttt{.lmv-clean}) files are written.
+
+\subsubsection{\texttt{TABLES} step}
+
+The \texttt{TABLES} button perform the same scanning and
+identificatio process as the \texttt{IMAGING} button, but stores
+the resulting UV Tables (instead of the .cct and .lmv-clean files for
+the \texttt{IMAGING} button) in a sub-directory (\texttt{./TABLES/}
+by default, controlled by \sicvar{all\%tables}).
+
+  This steps is optional, and only needed if the user intends to 
+perform some UV data analysis (like UV plane fitting, line stacking,
+continuum spectral index determination, direct modeling, etc...).
+
+\section{Really Huge Problems}
+
+\imager{} assumes everything fits into memory. This is in general
+quite fine for \NOEMA{}  data. However, for \ALMA{} data, if you are 
+working with a too small computer (such as my laptop, which is 
+otherwise fine), you may be lacking physical RAM, and \imager{} may 
+become really inefficient by using Virtual Memory instead.
+
+To avoid time losses, \imager{} prevents reading UV data whose size
+exceeds the available RAM, and warns the user if it exceeds half
+of the RAM.  To treat these cases, \imager{} provides instead
+a number of tools that can work sequentially on the data set,
+instead of loading it in memory all at once. 
+
+\begin{enumerate}
+\item Working by subsets:\\
+  the \comm{READ}{/RANGE} command allows to select an ensemble of 
+  channels from a UV data. If this ensemble is small enough, \imager{} 
+  can work.  At the end the \comm{WRITE}{/APPEND} and 
+  \comm{WRITE}{/REPLACE} command will allow to put these channels at 
+  their proper places in a deconvolved data cube.
+\item Working on UV data files:\\
+  Some operations on UV data, like time averaging, separation of line 
+  from continuum emission, or self-calibration, and of course, spectral 
+  resampling, are best done using all valid channels to avoid loosing 
+  sensitivity. 
+  To allow \imager{} to do them even for large data
+  files, most UV-related commands have a \texttt{/FILE} option which
+  instructs the command to work from the corresponding data file,
+  instead of the UV buffers. This includes \comm{UV\_PREVIEW}{/FILE}, 
+  \comm{UV\_BASELINE}{/FILE}, \comm{UV\_FILTER}{/FILE} and especially 
+  the \comm{UV\_SPLIT}{/FILE} commands. Time averaging can be performed 
+  by \comm{UV\_TIME}{/FILE}, and prior sorting by time order can be
+  done by \comm{UV\_SORT}{/FILE}. Spectral range extraction is possible by 
+  \comm{UV\_EXTRACT}{/FILE}, spectral resampling by \comm{UV\_COMPRESS}{/FILE}
+  \comm{UV\_RESAMPLE}{/FILE}  and \comm{UV\_HANNING}{/FILE}.
+\end{enumerate}
+By using the above commands, all operations can be done in a
+quasi sequential way, avoiding to load in memory whole data sets.
+
+Two commands have no equivalent using the \imager{} buffers, and work
+only on files. Their \texttt{/FILE} option is used to provide an
+homogeneous syntax, but is  mandatory.
+\begin{enumerate}
+\item the \comm{UV\_MERGE}{/FILE}\\
+that allows to merge together an arbitrary number of UV tables,
+in spectral line (with spectral resampling) or continuum (with 
+flux scaling according to a spectral index) modes.
+\item the \comm{UV\_SPLIT}{/FILE}\\
+that combines the capabilities of \com{UV\_BASELINE} and 
+\com{UV\_FILTER} in a single command, since both operations require 
+the same parameters and provide complementary informations.
+\item The \comm{UV\_SORT}{/FILE} command also has a different behaviour than
+its memory only version \com{UV\_SORT}. While the later creates
+a transposed version of the UV table, the former keeps the normal
+organisation with the visibility axis first. 
+\end{enumerate}
+

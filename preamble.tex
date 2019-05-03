@@ -1,0 +1,29 @@
+\section{Pre-amble}
+
+%\textbf{This document is under construction; it is partly based on the older documentation of \mapping{}.}
+
+\imager\ is an interferometric imaging package, tailored for usage
+  simplicity and efficiency for multi-spectral data sets.
+
+\textbf{\imager\  is *** NOT *** \mapping }
+
+\imager{} was created because the initial infrastructure for imaging
+in the \mapping{} program was not adapted to the implementation 
+of imaging methods that became possible and/or were required for
+\NOEMA{} (and useable for \ALMA{}), such as self-calibration,
+wide band imaging, or routine processing of Mosaics and Short spacings.
+ 
+The \imager{} design takes great care of efficiency, by using parallel 
+programming and minimizing Input/Output on files. This lead to a 
+concept with a single \com{READ} of data, a few (in general only 2) 
+simple processing commands with built-in intelligent parameter guesses, 
+a visual user control, and a single \com{WRITE} of the results once the 
+user is satisfied of it.
+
+We took the opportunity to revise and streamline the user interface,
+providing access to all tools through simple commands. A special
+effort was put on the visualization tools, which provide enhanced
+speed and capabilities, yet preserving a very high level of compatibility
+with those previously offered in \mapping{} .
+
+

@@ -1,28 +1,111 @@
-\section{Basic concepts}
+\section{IMAGER in short}
 
-\subsection{Objectives}
+\imager\ is an interferometric imaging package in the \gildas{} 
+software, tailored for usage simplicity and efficiency for 
+multi-spectral data sets.
 
 The main goals of \imager{} are
 \begin{enumerate}
 \item to offer a proper implementation of imaging in case of
 wide relative bandwidth, where the natural angular resolution
 changes with frequency.
-\item to implement a simpler (and incidentally faster) scheme to process Mosaics,
+\item to implement a simple and efficient scheme to process Mosaics,
 including short spacings from single dish data
-\item to minimize image sizes 
-\item to minimize processing time by using parallel
-programming as much as possible and reducing Input/Output to the strict minimum.
+\item to take advantage of improved capabilities of \NOEMA{} and 
+\ALMA{}, by offering new tools like self-calibration or wide bandwidth 
+analysis.
 \item to simplify user interfaces, by providing sensible defaults.
-\item to take advantage of improved capabilities of \NOEMA{} and \ALMA{}, by offering new
-tools like self-calibration or wide bandwidth analysis.
+\item to minimize image sizes 
+\item to minimize processing time by using parallel programming as much 
+as possible and reducing Input/Output to the strict minimum.
 \end{enumerate}
 
-\imager{} was developed and optimized to handle large data files. Therefore, 
-\imager{}\  works mostly on internal buffers and avoids as much as possible saving data to intermediate files. 
-File saving is done ultimately once the data analysis process is complete, 
-which offers an optimum use of the disk bandwidth.
+\imager{} was developed and optimized to handle large data files. 
+Therefore, \imager{}\  works mostly on internal buffers and avoids as 
+much as possible saving data to intermediate files. File saving is done 
+ultimately once the data analysis process is complete, which offers an 
+optimum use of the disk bandwidth.
+
+\subsection{Using this document}
+
+\subsubsection{For beginners}
+If you have never done any interferometry before, or if you do not know 
+what is a \uv{} table, we suggest you read Sections \ref{sub:structure},
+\ref{sec:uvtables} 
+and \ref{sec:single} before doing anything at all. These are short 
+enough to give you the basic tools (\com{HELP} plus the 5 main 
+commands: \com{READ}, \com{UV\_MAP}, \com{CLEAN}, \com{VIEW} and 
+\com{WRITE}), and will give you hints on why \imager{} behaves like 
+this.
+
+Remember two things: look at the results (command \com{VIEW}) at 
+all steps, and ask more experienced users if they make sense if
+any doubt arise.
+
+\subsubsection{For previous users of \mapping{} }
+The principles have not changed. Most commands remain quasi identical. 
+Actions which were driven by widgets have often been replaced by simple 
+commands (with intuitive names). So you can skip over the fundamentals, 
+and focus on the new tools offered by \imager{}. In practice, for you, 
+commands will make fairly reasonable choices of default parameters. 
+Just do not forget to \com{WRITE} your data.
+
+Changing the defaults may be needed only for practical reasons:
+\begin{itemize}\itemsep 0pt
+\item Optimizing computation time. This includes adjusting
+the field of view (variable \sicvar{MAP\_FIELD}), resampling
+in velocity (command \com{UV\_RESAMPLE}) and time averaging
+(command \com{UV\_TIME})
+\item Comparing strictly different images (on a pixel per pixel
+basis). Adjusting \sicvar{MAP\_SIZE} and \sicvar{MAP\_CELL} will
+become critical.
+\end{itemize}
+
+A quick look at the \com{HELP} will guide you to the commands
+that will do what widgets were doing before.
+
+\subsubsection{Facing the dataflow: 100 000 channel imaging with \NOEMA{} or \ALMA{} }
+
+For \NOEMA{}, with the advent of PolyFiX, the paradigm has changed: a spectral window
+may contain a substantial number of interesting spectral lines, not
+just one as with the previous narrow band spectral correlator. The same
+can happen (although to a lesser extent) with \ALMA{}.
+
+That is perhaps where \imager{} is most helpful. It contains new tools 
+to help you automating this tedious part.  The primary tool is command 
+\com{UV\_PREVIEW} which, provided one or more spectral line catalogs 
+have been defined (see command \com{CATALOG}), allows to semi-automate 
+the line identification among many UV tables. 
+
+The script \texttt{@ noema-scan} used after a \com{UV\_PREVIEW} on a 
+wide band UV table will help you identify who is who among the 64 
+spectral windows that PolyFix may provide. 
+
+A widget also allows simple image creation from
+any UV table, including continuum subtraction, referencing to 
+different frequencies and velocities, and
+spectral resampling. Scripts \texttt{@ image-all} and
+\texttt{@ image-one} offer other alternatives. They are useful
+examples of more advanced processing.
+
+A much more advanced tool is the suite of \texttt{all-*.ima} scripts
+that streamlines and even fully automates the imaging process of
+a whole ensemble of UV tables. See Section \ref{sec:all} for details.
+
+\subsubsection{For lazy or overbooked ones}
+
+If you have many spectral lines, and need results very quickly, 
+the suite of \texttt{all-*.ima} scripts is made for you. It can provide
+you one image for each spectral line specified in your line catalog
+that fall into the bandwidth of your data.
+
+The default will do a pretty good job on most data sets, but
+can be customized for a better result. 
+See Section \ref{sec:all} for details.
+
 
 \subsection{Overview of the data reduction and analysis}
+\label{sub:overview}
 
 Once the data has been acquired by an interferometer such as the 
 NOrthern Extended Millimter Array  
@@ -45,10 +128,9 @@ spectral cube (2 axes of coordinates and 1 axis of velocity/frequency).
 %Finally, the \greg{} program implements several tools to visualize and
 %analyze an \lmv{} spectral cube as those functionalities are not specific to
 %an interferometer (\eg\ the user can use them as well on 30m spectral cube).
-Finally, the \greg{} program implements several generic tools to visualize and 
-analyze  \lmv{} spectral cubes, which are not specific to an interferometric use 
+\imager{} includes \greg{} for the  visualization, and provides additional
+image analysis functionalities,  which are not specific to an interferometric use 
 (\eg\ they can be used with the \IRAM{} 30\,m spectral cubes as well).
-\imager{} includes \greg{} for the  visualization and analysis functionalities.
 
 The choice of clearly separating calibration and imaging+deconvolution was
 taken at start of the Plateau de Bure Interferometer (\PdBI{}), 
@@ -67,13 +149,15 @@ visualization+analysis can be done in other softwares (\eg\ \miriad{},
 \aips{}, \casa{} for the imaging and deconvolution
 and \karma{} for the visualization and analysis).
 
-With the improvement of \NOEMA{} (increase of the number of antennas and
-better receiver sensitivities) and with the advent of a new generation of
-interferometer (\ALMA{}), an additional step of self-calibration may
-improve the consistency of the final results by imposing additional
-consistent constraints on the calibration. This step is further presented in chapter 4.
+With the improvement of \NOEMA{} (increase of the number of antennas 
+and better receiver sensitivities) and with the advent of a new 
+generation of interferometer (\ALMA{}), an additional step of 
+self-calibration may improve the consistency of the final results by 
+imposing additional consistent constraints on the calibration. This 
+step is further presented in chapter 4.
 
 \subsection{The structure of the \imager{} program}
+\label{sub:structure}
 
 \subsubsection{Structure and recommendations}
 
@@ -89,36 +173,30 @@ The \imager{} program supports
 %\item A simulator of ALMA continuum observations.
 \end{itemize}
 
-%While in \mapping these different steps can be performed through the use of 
-%dedicated commands (e.g., the \clean language), tasks (activated through 
-%the \com{RUN} command), or a collection of \sic procedures (the \com{GO} and \com{INPUT} 
-%families, e.g., \comm{GO}{CLEAN}), 
-%there are two main types of tools specifically developed in \imager:
 It consists in a collection of commands, either dedicated to image and deconvolution
   (the \lang{clean} language) or implementing basic functionalities (the
   \lang{sic}, \lang{greg}, or \lang{calibrate}  families of languages).
-%\item A collection of widgets (?) grouped in the \imager{} main menu to
-%  interface most of the above possibilities.
+  
+A few additional widgets are grouped in the \imager{} main menu to
+provide more integrated interface to the above possibilities, or
+more elaborate control. As of today\footnote{5-Dec-2018}, some
+of these widgets are still experimental. On the contrary, commands
+are stable.
 
 
-%We recommend the following general strategy to select the ``right'' way of
-%doing one operation
-%\begin{itemize}
-%\item If a command of the \clean{} language implements this operation,
-%  always use it even though this possibility may also be implemented as a
-%  procedure and/or a task (\eg\ \verb|CLEAN\UV_MAP|, \comm{GO}{UV\_MAP} and
-%  \comm{RUN}{UV\_MAP}). This is because our minimum goal is the maintenance
-%  of the \clean{} language, not of the tasks (as long as the tasks do not
-%  share the same code as the \clean{} language).
-%\item If a \com{GO} procedure or a widget and a task implement this
-%  operation, always prefer the use of the procedure or the widget over the
-%  use of the task as procedure or the widget were designed to ease the
-%  interaction with the task, \ie\ they wrap the call of the task anyhow.
-%\item If this operation is coded only as a task or a procedure, avoid
-%  reinvent the wheel, just use it.
-%\end{itemize}
-%There may be exceptions to those recommendations: Always follow the
-%detailed indications of the manual.
+\subsubsection{Implementation issues}
+
+The new implementation of \imager{} and in particular of the 
+\com{UV\_MAP} and \com{CLEAN} commands uses most of the 
+older code, but re-arranged such that ensembles of contiguous channels 
+(``chunks'') are treated at once and share the same synthesized beam. 
+Deconvolution with \com{CLEAN} then proceeds by using the synthesized 
+beam with the appropriate frequency for each channel. The user can 
+control the ``chunk'' size, and hence the precision of the process 
+given the desired field of view.
+
+As a result of the new concept, beams (whether primary or synthesized) 
+can be 4-D arrays, as they may depend on Frequency and Field.
 
 \subsection{Imaging/deconvolution: a brief sequence of commands}
 For the user, \imager{} reduces the number of actions to the strict minimum. 
@@ -138,8 +216,6 @@ The imaging sequence is always the same:
        5- Writing the result 
        WRITE * MyData  
 \end{verbatim}
-
-
 
 \begin{itemize}
 \item \textbf{Step 1:} Reading  the  specified  internal  buffer (here 
@@ -173,54 +249,21 @@ the UV  tables) under the common file name ''\texttt{MyData}''. In the case of t
 present example, the following files are produced: \texttt{MyData.lmv, 
 MyData.lmv-clean, MyData.cct, MyData.beam}, which correspond to the 
 buffers: \sicvar{DIRTY}, \sicvar{CLEAN}, \sicvar{CCT}, and \sicvar{BEAM}, respectively. 
-\com{WRITE}\texttt{UV MyData} would only write the internal buffer (\sicvar{UV}) in the 
+\com{WRITE}\texttt{ UV MyData} would only write the internal buffer (\sicvar{UV}) in the 
 file \texttt{MyData.uvt} (the default extension corresponds to the specified 
 buffer).
 \end{itemize}    
 
-\subsubsection{Implementation issues}
-
-The new implementation of the \com{UV\_MAP} command uses most of the 
-older code, but re-arranged such that ensembles of contiguous channels 
-(``chunks'') are treated at once and share the same synthesized beam. 
-Deconvolution with \com{CLEAN} then proceeds by using the synthesized 
-beam with the appropriate frequency for each channel. The user can 
-control the ``chunk'' size, and hence the precision of the process 
-given the desired field of view.
-
-As a result of the new concept, beams (whether primary or synthesized) 
-can be 4-D arrays, as they may depend on Frequency and Field.
-
-% MOVE THIS TO DECONVOLUTION CHAPTER
-%\begin{verbatim}
-%IMAGER> clean ?
-%CLEAN deconvolves the DIRTY image map using the dirty BEAM
-% 
-%* The outputs are the CLEAN and RESIDUAL images, and the 
-%  Clean Component Table, CCT
-% 
-%  Cleaning method                   CLEAN_METHOD    [ hogbom ]     METHOD 
-%  Loop gain                         CLEAN_GAIN      [ 0.2 ]        GAIN   
-%  Fractional residual               CLEAN_FRES      [ 0 ]          FRES
-%  Absolute residual (Jy)            CLEAN_ARES      [ 0 ]          ARES
-%  Number of Clean components        CLEAN_NITER     [ 0 ]          NITER 
-%  Minimum number of components      CLEAN_NKEEP     [ 70 ]   
-%  Number of positive components     CLEAN_POSITIVE  [ 0 ]    
-% 
-%* Mosaic mode is OFF 
-%     BLC [ 0 0 ]               TRC [ 0 0 ]
-%     MAJOR [ 0 arc sec]        MINOR [ 0 arc sec]
-%     ANGLE [ 0 deg E from N]   BEAM_PATCH [ 0 0 ]
-%\end{verbatim}
-
 \subsection{Usage of the HELP}
+\label{sub:help}
 
-A simple call to \com{HELP} will display the various languages (e.g., 
-\lang{SIC}, \lang{GREG}, \lang{CALIBRATE}, \lang{CLEAN}) accessible to 
-the help documentation and list some commands with available 
-documentation. Note that \com{CLEAN} is a command and \lang{CLEAN} a language 
-(i.e., a family of commands). The language of a given command is 
-recalled in the help of each command. 
+As with any \sic{} based program, simple call to \com{HELP} will 
+display the various languages (e.g., \lang{SIC}, \lang{GREG}, 
+\lang{CALIBRATE}, \lang{CLEAN}) accessible to the help documentation 
+and list some commands with available documentation. Note that 
+\com{CLEAN} is a command and \lang{CLEAN} a language (i.e., a family of 
+commands). The language of a given command is recalled in the help of 
+each command. 
 
 Example: the command \com{APPLY} belongs to the language \lang{CALIBRATE}, 
 it has one argument which can be \com{AMPLI} or \com{PHASE} exclusively, 
@@ -248,28 +291,8 @@ Additional Help Available:
  Actions      MAPPING      UV_Handling  MAP_Handling
 \end{verbatim} 
 
-To further explore the difference between \imager\ and \mapping :
-\begin{verbatim} 
-IMAGER> help imager mapping
-USER\IMAGER = "@ welcome.ima"
-IMAGER MAPPING
-     Caution:  IMAGER is *** NOT *** MAPPING
- 
-     Although the underlying algorithms are the same as in the
-  MAPPING program, the concepts are quite different.
- 
-    The user interface to MAPPING is file-oriented. The user interacts
-  with MAPPING generally by a script, packaging a complex sequence of
-  commands, tasks, reads and writes to intermediate files. Fine control
-  of the script parameters are in general done through widgets.
- 
-    The basic concept of IMAGER is opposite: a single READ of data, a
-  few simple processing commands with built-in intelligent parameter
-  guesses, a visual user control, and a single WRITE of the results
-  once the user is satisfied of it.
- \end{verbatim}
- 
-Finding documentation and help for the \imager\ commands can be done in three different ways:  
+In addition, finding documentation and help for the \imager\ commands 
+can be done in three different ways:  
 \begin{itemize}
 \item a simple call to the \com{HELP} command provides a description of 
 the command and its arguments and options
@@ -281,19 +304,22 @@ users (''\com{Command ??}''), all its parameters (''\com{Command ???}).
 for the most commonly used parameters.
 \end{itemize}
 
-Documentation on subtopics of a given command (e.g., Variables, Arguments, or Results) 
-can be obtained though: \com{HELP} command subtopic. (Warning: subtopic is case sensitive!). 
-The list of available subtopics is found at the bottom of the documentation of each command: 
+Documentation on subtopics of a given command (e.g., Variables, 
+Arguments, or Results) can be obtained though: \com{HELP} command 
+subtopic. (Warning: subtopic is case sensitive!). The list of available 
+subtopics is found at the bottom of the documentation of each command: 
 \begin{verbatim} 
 IMAGER> help uv_map
 [...] 
 Additional Help Available:
- Mosaics      /FIELDS      /TRUNCATE    Variables    MAP_BEAM_STE MAP_CELL
- MAP_CENTER   MAP_CONVOLUT MAP_FIELD    MAP_POWER    MAP_PRECIS   MAP_ROBUST
- MAP_ROUNDING MAP_SHIFT    MAP_SIZE     MAP_TAPEREXP MAP_TRUNCATE MAP_UVTAPER
- MAP_UVCELL   MAP_VERSION  MAP_WEIGHT   MCOL         WCOL         Old_Names:
- convolution  map_angle    map_dec      map_ra       uv_taper     uv_cell
- taper_expo   weight_mode
+ Mosaics      /FIELDS      /RANGE       /TRUNCATE    
+ Variables:
+              MAP_BEAM_STE MAP_CELL     MAP_CENTER   MAP_CONVOLUT MAP_FIELD
+ MAP_POWER    MAP_PRECIS   MAP_ROBUST   MAP_ROUNDING MAP_SHIFT    MAP_SIZE
+ MAP_TAPEREXP MAP_TRUNCATE MAP_UVTAPER  MAP_UVCELL   MAP_VERSION  
+ Old_Names:
+              convolution  map_angle    map_dec      map_ra       mcol
+ uv_cell      uv_shift     uv_taper     taper_expo   wcol         weight_mode  
 \end{verbatim} 
 
 Example: the following command will list the control variables of the 
@@ -310,7 +336,7 @@ UV_MAP Variables
     MAP_BEAM_STEP   [       ]  Number of channels per single dirty beam
     MAP_CELL        [ arcsec]  Image pixel size
     MAP_CENTER      [ string]  RA, Dec of map center, and Position Angle
-    MAP_CONVOLUTION [       ]  Convolution function    % CONVOLUTION
+    MAP_CONVOLUTION [       ]  Convolution function     % CONVOLUTION
     MAP_FIELD       [ arcsec]  Map field of view
     MAP_POWER       [       ]  Maximum exponent of 3 and 5 allowed in MAP_SIZE
     MAP_PRECIS      [       ]  Fraction of pixel tolerance on beam matching
@@ -333,7 +359,7 @@ UV_MAP Variables
 \end{verbatim} 
 
 A more detailed description (type, size) of a given variable can be obtained 
-through ''help command variable'', as in this example:
+through \texttt{help command variable}, as in this example:
 \begin{verbatim} 
 IMAGER> help uv_map map_uvtaper
 UV_MAP MAP_UVTAPER
@@ -353,231 +379,34 @@ The default values of the useful parameters are checked through
 different.}
 \begin{verbatim} 
 IMAGER> uv_map ?
- 
  UV_MAP makes a dirty image and a dirty beam from the UV data
  
-* Variable MAP_CENTER controls shifting and rotation
+* Variable MAP_CENTER controls shifting ang rotation
 * MAP_CELL[2], MAP_SIZE[2], MAP_FIELD[2] control the map sampling
 * MAP_UVTAPER[3], MAP_UVCELL and MAP_ROBUST
      control the beam shape and weighting scheme
 * MAP_BEAM_STEP and MAP_PRECIS control the dirty beam precision
  
+-- Basic parameters 
   Map Size (pixels)                 MAP_SIZE        [ 0 0 ]
   Field of view (arcsec)            MAP_FIELD       [ 0 0 ]
   Pixel size (arcsec)               MAP_CELL        [ 0 0 ] 
   Map center                        MAP_CENTER      [  ]      
   Robust weighting parameter        MAP_ROBUST      [ 0 ]
-  UV cell size (meter)              MAP_UVCELL      [ 7.5 ]   
-  UV Taper (m,m,deg)                MAP_UVTAPER     [ 0 0 0 ] MAP_TAPEREXPO [ 2 ]
-  Channels per single beam          MAP_BEAM_STEP   [ 0 ]
-  Tolerange at map edge (pixels)    MAP_PRECIS      [ 0.1]
-  Rounding method                   MAP_POWER       [ 2 ]     MAP_ROUNDING [ 0.05 ]
-  Gridding Convolution method       MAP_CONVOLUTION [ 5 ]
+  UV cell size (meter)              MAP_UVCELL      [ 0 ]   
+  UV Taper (m,m,deg)                MAP_UVTAPER     [ 0 0 0 ] 
 \end{verbatim} 
-Example: The default Gridding Convolution method is number 5 (Spheroidal).
 
 \subsubsection{Notes for \mapping{} users}
 
 The names of variables and most commands have been kept from 
 \mapping{}, old names appear in the \com{HELP} whenever they have been 
 replaced. In addition, for the sake of compatibility, \sic{} procedures 
-can still be activated as in \mapping{} for the sake of compatibility, 
-although most of the \com{GO} procedures should have been replaced by a 
+can still be activated as in \mapping{},  
+although the \com{GO} procedures have been replaced by a 
 dedicated \imager{} command or procedure. For instance, \comm{GO}{PLOT}  
 (or its variants \comm{GO}{BIT}, \comm{GO}{NICE} and \comm{GO}{MAP}) and 
 \comm{GO}{UVSHOW} offer 
 similar features to the \com{SHOW} command, but take data from files or 
 SIC image variables, depending on variables \sicvar{NAME} and \sicvar{TYPE}. 
-
-
-%\subsection{Widget description}
-%TO BE DONE
-%\subsection{A bit of history}
-%
-%Implementation of imaging and deconvolution algorithms inside \gildas{}
-%started in the early nighties. The first implementation was made as a
-%collection of independent programs, called tasks in the \gildas{}
-%environment, and activated through the \com{RUN} command in the \graphic{}
-%program. The main advantage was the ease of programing, the main drawback
-%was the lack of user-friendliness. To tackle this drawback, two different
-%approaches were used.
-%\begin{itemize}
-%\item First, the calling of tasks were hidden through the call to \sic{}
-%  procedures (the \com{GO} and \com{INPUT} families of scripts) whose
-%  behaviors was modified by global variables. The activation of the tasks
-%  and the development of the \sic{} procedures happened in a preexisting
-%  program, called \graphic{} which also contained the tools to visualize
-%  and analyze the spectra cubes.
-%\item Second, a single, big program, called \imager{}, was developed with
-%  flexibility in mind, \eg\ the possibility to interactively define
-%  supports where to search for clean components. The support for
-%  deconvolution of mosaics was built only in \imager{}. The same procedure
-%  names were used in \imager{} and \graphic{} to obtain the same
-%  look-and-feel.
-%\end{itemize}
-%Up to 2003, there thus were two \gildas{} program, \ie\ \imager{} and
-%\graphic{}, which offered slightly different services with procedures
-%sharing the same names. The status of the \graphic{} program was difficult
-%to understand as it shared similarities with the \greg{} program (which
-%defines all the drawing commands of \gildas{}) and with the \imager{}
-%program. We thus decided during the 2003 change of \gildas{} architecture
-%to transfer the visualization and analysis capacities of \graphic{} in
-%\greg{} and the imaging and deconvolution capacities of \graphic{} in
-%\imager{}.  The \graphic{} program was deprecated and we made the \greg{}
-%and \imager{} program able to understand the \texttt{graphic} extension of
-%procedure files for backward compatibility. The major drawback of this
-%decision is the fact that we currently have in the same program (\ie\ 
-%\imager{}) both tasks, procedures and commands to do similar but slightly
-%different things.  Not much happened following this step due to manpower
-%shortage in the \gildas{} team. Our goal in the coming years is to clean
-%this situation by ensuring that both tasks and commands use the same
-%FORTRAN code.  Our first main step is to update the documentation.
-
-%\section{Cookbook for the impatient ones}
-%
-%This section presents typical deconvolution sessions on a real example
-%available in the \gildas{} distribution.
-%
-%\subsection{Imaging and deconvolution pipeline}
-%
-%\begin{verbatim}
-%       1 sic copy gag_demo:demo.uvt 1mm.uvt
-%       2 let name 1mm
-%       3 go uvcov 
-%       4 go uvall
-%       5 input uvall
-%       6 let xtype weight
-%       7 go uvall
-%       8 go image
-%       9 let type beam
-%      10 go bit
-%      11 let type lmv
-%      12 go bit
-%      13 let type lmv-res
-%      14 go bit
-%      15 let type lmv-clean
-%      16 go bit
-%      17 exit
-%\end{verbatim}
-%Comments:
-%\begin{description}
-%\item[Step 1] Copy a demonstration \uv{} table in the \gildas{}
-%  distribution in the current directory.
-%\item[Steps 2-7] Visualization of different aspects of \uv{} data directly
-%  from the file. Step 3 shows the \uv{} coverage. Step 4 displays the
-%  scatter plots of the amplitude vs spatial frequency of the \uv{}
-%  visibilities (default of the \comm{GO}{UVALL} procedure). Step 5 displays
-%  the value of the parameters which modify the behavior of the
-%  \comm{GO}{UVALL} procedure. Steps 6 and 7 display the scatter plots of
-%  the amplitude vs weight of the \uv{} visibilities.
-%\item[Step 8] Imaging and deconvolution pipeline with visualization of the
-%  deconvolved image using default parameters. The result is clearly not
-%  optimal in this case (see next section).  All the results are directly
-%  written as files on disk with the following file name conventions: dirty
-%  beam: \texttt{1mm.beam}, dirty image: \texttt{1mm.lmv}, clean image:
-%  \texttt{1mm.lmv-clean}, clean residuals: \texttt{1mm.lmv-res}.
-%\item[Step 9-14] Successive visualization of the dirty beam (steps 9 and
-%  10), dirty image (steps 11 and 12), clean residuals (steps 13 and 14) and
-%  clean image (steps 15 and 16).
-%\end{description}
-%
-%\subsection{Finely tuned imaging and deconvolution}
-%
-%\begin{verbatim}
-%       1 lut rainbow3  
-%       2 read uv 1mm
-%       3 uv_show
-%       4 uv_stat weight
-%       5 input uv_map
-%       6 let weight_mode UN
-%       7 let uv_cell 7.5 1
-%       8 uv_map
-%       9 show beam
-%      10 show dirty
-%      11 input clean
-%      12 let niter 1000
-%      13 hogbom /flux 0 0.6
-%      14 show residual
-%      15 let niter 2000
-%      16 hogbom /flux 0 0.6
-%      17 show residual
-%      18 let niter 4000
-%      19 hogbom /flux 0 0.6
-%      20 show residual
-%      21 show clean
-%      22 support
-%      23 hogbom /flux 0 0.6
-%      24 show residual
-%      25 show clean
-%      26 write * 1mm
-%%      27 write dirty 1mm
-%%      28 write clean 1mm
-%%      29 write residual 1mm
-%%      30 write cct 1mm
-%      31 exit
-%\end{verbatim}
-%Comments:
-%\begin{description}
-%\item[Step 1] Select a color lookup table which nicely displays the
-%  features of the studied source.
-%\item[Step 2] Read \uv{} data from the \texttt{1mm.uvt} file to an internal
-%  \imager{} buffer.
-%\item[Step 3] Displays the scatter plot of the amplitude vs spatial
-%  frequency of the \uv{} visibilities. This commands is similar to the
-%  \comm{GO}{UVALL} command (see previous section), except that it works
-%  only on the data previously loaded in the internal buffer.
-%\item[Step 4] Predicts the synthesized beam, expected noise level, and
-%  recommended pixel size for different values of the robust weighting
-%  threshold. This helps the user to select the threshold used in the
-%  imaging steps (2nd parameter of the \texttt{uv\_cell} variable).
-%\item[Steps 5-10] Compute a tailored dirty beam and dirty image. Step 5
-%  displays the \sic{} variables that customizes the behavior of the
-%  \com{UV\_MAP} command. Step 6 and 7 selects robust weighting (instead of
-%  the default natural weighting) and the associated threshold. Step 8
-%  actually computes the results which are stored in internal buffers and
-%  visualized in steps 9 and 10.
-%\item[Steps 11-14] First deconvolution on internal buffers. Resulting clean
-%  residuals, clean image and clean component tables are also stored in
-%  internal buffers. Step 11 displays the \sic{} variables that customizes
-%  the behavior of all the clean deconvolution algorithms. Steps 12 select
-%  the stopping criterion by enabling a maximum of 1000 clean components.
-%  Step 13 launches the deconvolution using the simplest \clean{} algorithm
-%  with simultaneous plot of the cumulative flux as a function of the number
-%  of found clean components. Step 14 displays the residuals, \ie\ remaining
-%  undeconvolved signal.
-%\item[Steps 15-24] Successive tries of the deconvolution to ensure deep
-%  enough cleaning, just by changing the stopping criterion (here the total
-%  number of clean components).
-%\item[Step 25] Displays the resulting clean image.
-%\item[Steps 26-30] Write the results (dirty beam, dirty image, clean image,
-%  clean residuals and clean component table) on disk files for use in
-%  future sessions.
-%\end{description}
-%
-%\subsection{Noise estimation and plotting}
-%
-%\begin{verbatim}
-%       1 let name 1mm
-%       2 let type lmv-clean
-%       3 go cct
-%       4 go noise
-%       5 let spacing '3*noise'
-%       6 go bit
-%       7 hardcopy 1mm-clean
-%       8 exit
-%\end{verbatim}
-%Comments:
-%\begin{description}
-%\item[Steps 1-3] Visualize the cumulative flux as a function of the number
-%  of found clean components to get an idea of the cleaning convergence.
-%\item[Step 4] Computes an experimental noise value which takes into account
-%  possible remaining side lobes after deconvolution.
-%\item[Step 5] Sets the spacing between contour levels to 3 times the
-%  experimental noise value (the \texttt{noise} \sic{} variable was defined
-%  by the \comm{GO}{NOISE} procedure).
-%\item[Step 6] Visualizes the clean image with the right values for the
-%  contour levels.
-%\item[Step 7] Makes a color Post-Script file, named \texttt{1mm-clean.eps},
-%  of the plot.
-%\end{description}
 

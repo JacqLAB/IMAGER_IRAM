@@ -1,15 +1,47 @@
-\section{UV Tables}
+\section{The input data: UV Tables}
+\label{sec:uvtables}
 
 The main goal of \imager{} is to convert interferometric measurements 
 stored in \uv{} tables into images suitable for astrophysical interpretation. 
 \uv{} tables contain a set of visibilities. \uv{} tables being the
-starting point, \imager{} contains a number of commands to handle
-them.
+starting point, \imager{} contains a number of commands to read then
+and handle them.
+
+\subsection{In a nutshell}
+
+For \NOEMA{}, create with \clic{} a UV table from the current
+index of cross-correlation observations and selected spectral window, 
+and read it with \imager{}
+\begin{verbatim}
+$ clic
+CLIC> (FILE ; FIND ; SET )   ! Build your index and spectral Window selection
+CLIC> TABLE MyTable.uvt [NEW] [/MOSAIC]  !  Create a UV table
+CLIC> EXIT
+$ imager
+IMAGER> READ MyTable.uvt [/Options ]
+\end{verbatim}
+
+For \ALMA{}, create with \casa{} a list of UVFITS files from a 
+Measuremet Set, convert them with \imager{}
+\begin{verbatim}
+$ casa
+CASA <2>: vis='MyMeasurementSet.ms'
+CASA <3>: casagildas()
+CASA <4>: execfile('casas2uvfits.py')
+CASA <5>: exit()
+$ imager
+IMAGER> sic find *.uvfits
+IMAGER> for string /in dir%file
+IMAGER>   @ fits_to_uvt 'string'
+IMAGER  next
+\end{verbatim}
+Conventions for file naming are described in Section \ref{uv:casa}.
+Each \uv{} table can later be read separately.
 
 
-\subsection{\uv{} table description}
+\subsection{UV table description}
 
-\subsubsection{\uv{} table data format}
+\subsubsection{UV table data format}
 
 A \uv{} table is a specific 2-D Gildas table, with a few additional
 informations in the header, and a special interpretation of the data
@@ -30,7 +62,7 @@ visibilities, namely:
 \begin{description}\itemsep 0pt
 \item[Column 1] U in meters;
 \item[Column 2] V in meters;
-\item[Column 3] Scan number;
+\item[Column 3] W in meters or Scan number;
 \item[Column 4] Observation date (integer \class{}/\clic{} Day
   Number\footnote{The \class{}/\clic{} is a "radio Julian date" (or "Jansky
     Julian date"), which starts as $-2^{15}$ on the date of the first radio
@@ -56,7 +88,7 @@ If a \uv{} table describes \texttt{nvis} visibility spectra composed of
 \texttt{nchan} frequency channels, each with \texttt{nstokes} Stokes parameters,
 the size of the table will thus be:
 \texttt{nvis} lines of \texttt{7+3*nchan*nstokes+ntrail} columns, where \texttt{ntrail}
-is the number of trailing column.
+is the number of trailing columns.
 
 \subsubsection{\uv{} header}
 
@@ -143,9 +175,140 @@ indicate telescope name, its geographic coordinates and the antenna
 diameter (in m). This is the new way to specify the primary beam.
 \item[Line 24] UV data section: number of channels, number of Stokes
 parameters and number of visibilities.
-\item[Line 15 to end] Special columns description.
+\item[Line 25 to end] Special columns description, including
+the 7 first ones and the \texttt{ntrail} trailing ones.
 \end{description}
+In particular, \textbf{Mosaic} \uv{} tables contain two trailing 
+columns named \texttt{L\_PHASE\_OFF, M\_PHASE\_OFF}
+for the so-called ''Phase Offset Mosaics'', or 
+\texttt{X\_POINT\_OFF, Y\_POINT\_OFF} for the ''Pointing Offset Mosaics'',
+which contains the angular offsets of the field centers with respect
+to the Phase reference. 
 
+\subsection{NOEMA: UV Tables from CLIC}
+\label{uv:clic}
+
+For \NOEMA{}, creating UV tables suitable for \imager{} is straightforward
+in \clic{}. From a list of selected cross-correlation scans, the command 
+\texttt{TABLE} creates a  \uv{} table with the appropriate format
+(or adds to an existing one). Mosaics are treated in much the same way:
+it is sufficient to add the \texttt{/MOSAIC} option to it.
+
+\subsection{\ALMA : UV Tables from \casa{}}
+\label{uv:casa}
+
+Importing \uv{} data from \casa{} to IMAGER is a little more complex, because
+of the totally different design philosophy of the two packages.
+\casa{} intends to solve the \textit{Measurement Equation}, whatever the
+complexity of this process.  It is a all-in-one package for this purpose,
+where calibration and imaging are deeply intermixed and use a
+unified data format.
+As a result, a \casa{} Measurement Set is a complex architecture
+encompassing relations between many components stored as Tables
+in a directory-like tree. It can handle calibrated data, calibration
+tables, multisource data sets, raw data in the same architecture,
+allowing to retain all information to process complex images, such
+as multi-frequency synthesis of polarized emission observed in
+a mosaic of fields.
+
+On the contrary, \imager{} works on calibrated data only, and
+with a single source (though possibly a mosaic) and single spectral setup at once.
+
+The importation process goes through UVFITS data files, produced by
+\texttt{exportuvfits} from \casa{}, and imported through the \com{FITS}
+command of \sic{}.  However, the UVFITS format is an incomplete standard, and 
+to recover properly all associated informations, these two steps have
+been encapsulated in sophisticated scripts on each side.
+
+\paragraph{On the \casa{} side}, the proper exportation is done by invoking the 
+\texttt{casagildas()} tool. \index{casagildas} 
+\footnote{This tool is made available to \casa{} by 
+\imager{}  (\imager{} does not need to be active, but must have been 
+executed once before)}. \texttt{casagildas()} scans the Measurement Set 
+using the \texttt{listobs()} tool, then runs a \gildas{} task named 
+\texttt{casa\_uvfits} which scans the output of 
+\texttt{listobs()} to prepare a Python script named  
+\texttt{casa2uvfits.py}.
+
+It is then up to the user to execute this Python script (as gently 
+reminded by the  \texttt{casagildas()} tool) that creates one UVFITS 
+file per Source and Spectral window in the input Measurement Set. Thus, 
+the sequence
+\begin{verbatim}
+  vis='MyMeasurementSet.ms'   # Setup the input Measurement Set filename
+  casagildas()                # List its content and create the export script
+  execfile('casa2uvfits.py')  # Execute the export script
+\end{verbatim}
+will create a set of
+\begin{verbatim}
+  Source-Frequency.uvfits
+\end{verbatim}
+files, where \texttt{Source} is the source name and \texttt{Frequency} is 
+the central frequency of the spectral window in MHz, for all combinations
+of sources and spectral windows.
+
+
+\paragraph{On the \imager{} side}, the UVFITS files have first to be
+converted to \uv{} tables. This can be done by a simple script
+\begin{verbatim}
+  sic find *.uvfits
+  for string /in dir%file
+    @ fits_to_uvt 'string'
+  next
+\end{verbatim}
+Each \texttt{Source-Frequency.uvfits} file will be converted to a 
+\texttt{Source-Frequency.uvt} \uv{} table (the original 
+\texttt{.uvfits} file is kept too).
+
+The \texttt{fits\_to\_uvt} \index{fits\_to\_uvt} script is based on the \com{FITS} command
+of \sic{}, but augmented with a number of tests to recognize the
+proper layout of the UVFITS file, as this layout depends on which
+\casa{} version was used, and whether it is a single source or
+multi source file.
+
+The \texttt{fits\_to\_uvt} script has a number of options. Help can
+be obtained by typing
+\begin{verbatim}
+  @ fits_to_uvt ?
+\end{verbatim}
+
+
+\paragraph{Current assumptions and limitations}
+\gildas{} works in the \texttt{LSR} velocity frame and has limited 
+polarization capabilities (as of Dec 2018, \imager{} can only process 
+one polarization state at a time, see Section \ref{sec:polar} for 
+details). Thus the \textit{casagildas() -}\texttt{fits\_to\_uvt} 
+pipeline makes several assumptions:
+\begin{itemize}
+\item FDM (Frequency Division Mode) spectral windows are converted to 
+LSR frame using the \textit{mstransform} tool
+\item TDM (Time Division Mode) spectral windows, which have low 
+spectral resolution (15 MHz), are assumed to be pure continuum
+data, and remain in the default frame of the original measurement
+set.
+\item The conversion from UVFITS to \uv{} tables assumes that the data 
+is unpolarized\footnote{unless the \texttt{/STOKES} option is present, 
+see Section \ref{sec:polar}}, and merges the initial polarization 
+states in an optimal way from the signal to noise point of view (i.e. 
+using the respective weights of the two parallel hand states). 
+\item \textit{casagildas()} takes the same input parameters
+as the \textit{listobs()} facility. Source and/or spectral
+window selection can thus be made by the user at this stage
+\item \textit{casagildas()} takes the same input parameters
+as the \textit{mstransform()} facility. Time integration
+may be done at this stage, but this may limit the performance
+of self-calibration at a later stage.
+\end{itemize}
+
+\subsection{Reading UV tables}
+
+\uv{} tables are simply read into \imager{} by \comm{READ}{UV}.
+The rest frequency to be used to compute the velocity scale
+is normally found in the table, but can be overridden 
+using the \comm{READ}{/FREQUENCY} option.
+By default, the whole table is read, but a subset of the
+channels can be read using the \comm{READ}{/RANGE} option (with
+the velocity scale as above).
 
 \subsection{UV Table handling}
 
@@ -153,7 +316,7 @@ Besides the \comm{READ}{UV} and \comm{WRITE}{UV} commands to read
 or write \uv{} tables, \imager{} has a number of commands to manipulate
 the current \uv{} table buffer. These commands have names starting
 by \texttt{UV\_}. Most of them are in the \lang{CLEAN} language, some
-in the \lang{NEWSTUFF} one. 
+in the \lang{ADVANCED} one. 
 
 \imager{} works using UV buffers. Most commands only work on 
 the current UV buffer, but some of them keep track of the previous
@@ -192,9 +355,12 @@ Both \com{UV\_BASELINE} and \com{UV\_FILTER} can use the results provided
 by \com{UV\_PREVIEW} to specify where spectral lines may be found.
 \item \com{UV\_CONTINUUM} converts a spectral line \uv{} table into a bandwidth 
 synthesis continuum \uv{} table. \com{UV\_CONTINUUM} requires some knowledge of 
-the image size to evaluate how many channels should be averaged 
-together. This is done using the same parameters and subroutines as 
+the field of view to evaluate how many channels should be averaged 
+together. This is done using the same parameters (\sicvar{MAP\_FIELD}, 
+or the product of \sicvar{MAP\_SIZE} by \sicvar{MAP\_CELL}) and subroutines as 
 for commands \comm{UV\_STAT}{SETUP} and \com{UV\_MAP}.
+\item \comm{UV\_MERGE}{/FILE} can merge several UV continuum 
+tables with a specified spectral index to optimize the sensitivity.
 \end{itemize}
 
 \item[Image preparation]:
@@ -204,34 +370,37 @@ different synthesized beams are needed.
 \item \com{UV\_SHORT} adds the short (or zero) spacing information provided by
 an additional single dish data, read by \comm{READ}{SINGLE}.
 \item \com{UV\_STAT} evaluates the impact of robust weighting
-and tapering on the synthesized beam. It provides recommandations for
+and tapering on the synthesized beam. It provides recommendations for
 the image and pixel sizes.
 \item \com{UV\_TRUNCATE} restricts the \uv{} baseline length range.
 \end{itemize}
 
 \item[Miscellaneous]:
 \begin{itemize}\itemsep 0pt
-\item \com{UV\_DEPROJECT} de-project the $(u,v)$ coordinates given
+\item \com{UV\_DEPROJECT} de-projects the $(u,v)$ coordinates given
 a specified phase center, orientation and inclination. This can be
 useful for inclined, flattened, nearly axi-symmetric structures such as
 proto-planetary disks or galaxies. 
-\item \com{UV\_RADIAL} computes the azimutal average of the visibilities.
-It is useful for rotationally symmetric structures such as proto-planetary disks, 
-for example.
+\item \com{UV\_RADIAL} computes the azimutal average of the 
+visibilities. It is useful for rotationally symmetric structures such 
+as proto-planetary disks or circumstellar envelopes, for example.
 \item \com{UV\_REWEIGHT} changes the visibility weights.
 \item \com{UV\_SHIFT} changes the phase center
+\item \comm{UV\_MERGE}{/FILE} can merge several UV tables, Line or Continuum.
+It also allows stacking different spectral lines.
 \end{itemize}
 
 \end{description} 
 
-The remaining \com{UV\_...} commands are related to imaging and
-deconvolution: \com{UV\_MAP} computes the dirty image, \com{UV\_RESTORE}
-computes the Clean image from a Clean component list by removal
-of the Clean components in the \uv{} plane, and imaging of the residuals.
-\com{UV\_RESIDUAL} just computes the residuals by subtraction of the
-Clean components. 
+The remaining \com{UV\_...} commands are related to imaging and 
+deconvolution: \com{UV\_MAP} computes the dirty image, 
+\com{UV\_RESTORE} computes the Clean image from a Clean component list 
+by removal of the Clean components in the \uv{} plane, and imaging of 
+the residuals. \com{UV\_RESIDUAL} just computes the residuals by 
+subtraction of the Clean components. 
 
-Finally, \com{UV\_SELF}, in the \lang{CALIBRATE} language, is a specific variant
-of \com{UV\_MAP} used to compute the intermediate images required for
-self-calibration. It is not intended for direct use by normal users.
+Finally, \com{UV\_SELF}, in the \lang{CALIBRATE} language, is a 
+specific variant of \com{UV\_MAP} used to compute the intermediate 
+images required for self-calibration. It is not intended for direct use 
+by normal users.
 
