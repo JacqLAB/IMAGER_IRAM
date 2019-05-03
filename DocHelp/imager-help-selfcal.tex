@@ -1,0 +1,498 @@
+        SELFCAL  [?|AMPLI|APPLY|PHASE|SUMMARY|SHOW [Last [First]]
+[/WIDGET]
+  Command to perform Self Calibration (even on spectral line  da-
+ta).  The solution is computed, saved and/or applied.
+  The arguments control the action.
+    SELFCAL ?        Lists the self calibration parameters
+    SELFCAL AMPLI    Compute an Amplitude only self calibration
+    SELFCAL APPLY    Apply the computed solution
+    SELFCAL PHASE    Compute a Phase only self calibration
+    SELFCAL SHOW []  Show the computed corrections
+    SELFCAL SAVE     Save self calibration parameters in selfcal.last
+    SELFCAL SUMMARY  Display the improvements in Noise & Dynamic range
+                     and calibration status
+\subsubsection{/WIDGET}
+\index{�!/WIDGET}
+\begin{verbatim}
+        SELFCAL /WIDGET
+
+Activates  the widget interface to perform self calibration (even
+on spectral line data set). A continuum  data  set  is  extracted
+from  the specified channel range, with all selected channels av-
+eraged to provide improved sensitivity to find a solution.
+
+  The buttons control the action.
+     AMPLI      Perform an Amplitude only self calibration
+     PHASE      Perform a Phase only self calibration
+     Continue   Continue execution when the script is in Pause
+     APPLY      Apply the solution
+     INPUT      List parameters (as in SELFCAL ?)
+     SAVE       Save the parameters in selfcal.last
+     SHOW       Show the computed corrections
+     SUMMARY    Display the improvements in Noise & Dynamic range
+\end{verbatim}
+\subsubsection{Arguments:}
+\index{�!Arguments:}
+\begin{verbatim}
+      The arguments control the action.
+    SELFCAL ?        Lists the self calibration parameters
+    SELFCAL AMPLI    Perform an Amplitude only self calibration
+    SELFCAL APPLY    Apply the solution
+    SELFCAL PHASE    Perform a Phase only self calibration
+    SELFCAL SAVE     Save the parameters in selfcal.last
+    SELFCAL SHOW []  Show the computed corrections
+    SELFCAL SUMMARY  Display the improvements in Noise & Dynamic range
+\end{verbatim}
+\subsubsection{AMPLITUDE}
+\index{�!AMPLITUDE}
+\begin{verbatim}
+        SELFCAL AMPLI
+
+Compute  an  Amplitude  only  self-calibration.  The  integration
+times, SELF__TIME, should in general be significantly larger than
+for a Phase only self-calibration.
+
+SELFCAL automatically adjusts the gains so  that  their  mean  is
+\end{verbatim}
+\subsection{.0,}
+\index{.0,}
+\begin{verbatim}
+
+\end{verbatim}
+\subsubsection{.0, APPLY}
+\index{.0,!APPLY}
+\begin{verbatim}
+        SELFCAL APPLY [Type [Gain]]
+
+Apply the self calibration solution. This is done only if the re-
+turn status  from  the  previous  computation,  SELF__STATUS,  is
+greater than 0.  SELFCAL APPLY automatically saves the parameters
+and results in the "selfcal-AMPLI.last"  or  "selfcal-PHASE.last"
+file, depending on the Type of solution applied.
+
+  Type  is  the  type  of  solution  to  apply.  The  default  is
+'SELF__MODE', i.e.  PHASE or AMPLI depending on the last type  of
+self-calibration  computed.   Type can also take the DELAY value,
+where the "phase" corrections are interpreted as atmospheric path
+changes and scale as Frequency.
+
+  Gain  is an optional gain factor (default is 1.) on the correc-
+tion.
+
+\end{verbatim}
+\subsubsection{.0, INPUT}
+\index{.0,!INPUT}
+\begin{verbatim}
+        SELFCAL INPUT  or SELFCAL ?
+
+Display SELFCAL control variables
+
+\end{verbatim}
+\subsubsection{.0, PHASE}
+\index{.0,!PHASE}
+\begin{verbatim}
+        SELFCAL PHASE
+
+Compute a  Phase-only  self  calibration.  The  integration  time
+should  be  short  enough  to correct for atmospheric errors, but
+large enough to obtain significant signal to noise for  most  an-
+tennas.
+
+\end{verbatim}
+\subsubsection{.0, SAVE}
+\index{.0,!SAVE}
+\begin{verbatim}
+        SELFCAL SAVE
+
+    Save the parameters and results in the "selfcal.last" file.
+
+\end{verbatim}
+\subsubsection{.0, SHOW}
+\index{.0,!SHOW}
+\begin{verbatim}
+        SELFCAL SHOW [Last [First]]
+
+Shows  the  correction  computed by self calibration. By default,
+the difference between the  last  two  iterations  is  displayed:
+phase  should be around 0, and amplitude around 1 if the solution
+is converged.
+
+If Last and First are present, it shows  the  difference  between
+these  two specified iteration. If Last only is present, it shows
+the total correction between the original data  and  that  itera-
+tion.
+
+The displayed ranges are controlled by SELF__ARANGE[2] (limits of
+Amplitude gain), SELF__PRANGE[2] (limits of Phase correction) and
+SELF__TRANGE[2] (limits for time axis).
+
+\end{verbatim}
+\subsubsection{.0, SUMMARY}
+\index{.0,!SUMMARY}
+\begin{verbatim}
+        SELFCAL SUMMARY
+
+Display  a summary of the Self-calibration process: type of cali-
+bration, rms and dynamic range at each iteration, as well as  the
+number of flagged or uncalibrated visibilities.
+
+\end{verbatim}
+\subsubsection{.0, Results:}
+\index{.0,!Results:}
+\begin{verbatim}
+
+SELFCAL  returns  results  in several variables, creates a CGAINS
+array containing the Gain values, and one  file  to  display  the
+computed correction. The file name is specified by SELF__SNAME.
+
+The result variables are:
+    SELF__APPLIED
+      Indicates whether the solution has been applied
+    SELF__STATUS
+      Indicates if a solution has been computed
+    SELF__DYNAMIC[Self__Loop+1]
+      The dynamic range at each iteration
+    SELF__RMSCLEAN[Self__Loop+1]
+      The rms noise at each iteration
+\end{verbatim}
+\subsubsection{SELF\_\_APPLIED}
+\index{.0,!SELF\_\_APPLIED}
+\begin{verbatim}
+
+Variable SELF__APLPLIED indicates whether a solution has been ap-
+plied (#0) or not (0). The value indicates the type  and  quality
+of solution, as for SELF__STATUS
+
+\end{verbatim}
+\subsubsection{SELF\_\_STATUS}
+\index{.0,!SELF\_\_STATUS}
+\begin{verbatim}
+
+Variable SELF__STATUS indicates if a solution has been computed
+      0 no solution
+      +/- 1   Phase solution
+      +/- 2   Gain solution
+    >0 means a good solution, <0 a poor one.
+\end{verbatim}
+\subsubsection{SELF\_\_DYNAMIC}
+\index{.0,!SELF\_\_DYNAMIC}
+\begin{verbatim}
+
+SELF__DYNAMIC  is  a  variable length array of size Self__Loop+1,
+containing the dynamic range at each iteration.
+
+\end{verbatim}
+\subsubsection{SELF\_\_RMSCLEAN}
+\index{.0,!SELF\_\_RMSCLEAN}
+\begin{verbatim}
+
+SELF__RMSCLEAN is a variable length array of  size  Self__Loop+1,
+containing the Clean map rms noise at each iteration.
+
+\end{verbatim}
+\subsubsection{Variables:}
+\index{.0,!Variables:}
+\begin{verbatim}
+
+The  SELFCAL  behaviour can be adjusted through control variables
+named SELF__... (see EXA SELF__ for a list), in addition  to  the
+control variables of UV__MAP (MAP__...) and CLEAN (CLEAN__...)
+
+The most important variable is SELF__TIMES, a variable length ar-
+ray which controls the integration time at each loop. SELF__NITER
+and SELF__MINFLUX also control the number of Clean components and
+minimum flux retained in each loop. The size of these arrays  de-
+fine the number of loops.
+
+See HELP SELFCAL SELF__LOOP to find out how to control the number
+of loops.
+
+\end{verbatim}
+\subsubsection{SELF\_\_CHANNEL}
+\index{.0,!SELF\_\_CHANNEL}
+\begin{verbatim}
+        SELF__CHANNEL[2]
+
+First and last channel to define the range to compute the UV  ta-
+ble  for  the self-calibration solution. For example, if you have
+used UV_PLUGC to plug a continuum data  into  the  last  channel,
+this  could be set to the number of channels. 0 0 means all chan-
+nels are averaged to compute the "continuum" image.
+
+\end{verbatim}
+\subsubsection{SELF\_\_COLOR}
+\index{.0,!SELF\_\_COLOR}
+\begin{verbatim}
+        SELF__COLOR
+
+Controls the LUT color range at each  self-calibration  cycle  if
+non  Zero.  Since the dynamic range evolves, this can be a useful
+way to highlight the gain. If non Zero, SELF__COLOR is passed  as
+argument to a COLOR command executed at each cycle after display.
+
+Pratical  values  for SELF__COLOR are -8 ("bright" version, high-
+lights the noise level) or +8 ("dark" version, hides the  noise),
+but  lower  absolute  values  may  be  needed  for higher dynamic
+ranges.
+
+See HELP COLOR for details.
+
+\end{verbatim}
+\subsubsection{SELF\_\_LOOP}
+\index{.0,!SELF\_\_LOOP}
+\begin{verbatim}
+
+Number of self-iteration loops. It is a ReadOnly variable that is
+automatically   computed   from  the  size  of  the  SELF__TIMES,
+SELF__NITER and SELF__MINFLUX arrays.
+
+  These variable length arrays can be resized using the LET  /RE-
+SIZE command. For example
+    LET SELF__TIMES 40 20 10 /RESIZE
+will lead to an array of 3 elements, SELF__TIMES[3].
+
+SELF__TIMES, SELF__NITER and SELF__MINFLUX must be of equal size.
+To simplify the process, constant arrays are assumed of arbitrary
+length in this determination.  If all 3 arrays have constant val-
+ues, SELF__TIMES determines the number of loops.
+
+Constant arrays are assumed of arbitrary length in this  determi-
+nation.  If all 3 arrays have constant values, SELF__TIMES deter-
+mines the number of loops.
+
+\end{verbatim}
+\subsubsection{SELF\_\_NITER}
+\index{.0,!SELF\_\_NITER}
+\begin{verbatim}
+
+Variable length array specifying the number of  Clean  components
+retained  for each loop of the self-calibration process.  Default
+is 0, meaning all Clean components found by CLEAN.
+
+For simple structures and Phase calibration, 10  may  be  enough.
+For more complex ones, be sure to include enough Clean components
+in the model.  More components can be taken  at  each  step,  al-
+though  the  better  knowledge  of  phase errors often allows the
+source to be represented with a smaller number of components  af-
+ter  self-calibration  than  before.  The default is a reasonably
+good compromise, although faster convergence may be obtained with
+smaller number of components.
+
+This  variable  length array can be resized using the LET /RESIZE
+command. For example
+    LET SELF__NITER 10 0 0 /RESIZE
+will  lead  to  3  self-calibration  loops  (if  SELF__TIMES  and
+SELF__MINFLUX  are  also of size 3), the first one selecting only
+\end{verbatim}
+\subsection{0}
+\index{0}
+\begin{verbatim}
+
+\end{verbatim}
+\subsubsection{0 SELF\_\_TIMES}
+\index{0!SELF\_\_TIMES}
+\begin{verbatim}
+
+Variable length array specifying the integration  time  (in  sec-
+onds) for each loop of the self-calibration process.
+
+At  NOEMA, 45 sec is the normal minimum integration time. Depend-
+ing on Signal to Noise, you may need to have  this  longer,  e.g.
+\end{verbatim}
+\subsection{20}
+\index{20}
+\begin{verbatim}
+crease only at the end.
+
+At ALMA, the minimum integration time is 6 sec. At VLA, this  may
+be as small as 1 sec.
+
+It  is  recommended to use the same integration time for the last
+two iterations, to simplify the interpretation of the results and
+of the SELFCAL SHOW display.
+
+This  variable  length array can be resized using the LET /RESIZE
+command. For example
+    LET SELF__TIMES 180 90 45 /RESIZE
+will lead 3 self-calibration loops (if SELF__TIMES and SELF__MIN-
+FLUX are also of size 3) with decreasing integration times.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_MINFLUX}
+\index{20!SELF\_\_MINFLUX}
+\begin{verbatim}
+
+Variable  length  array  specifying  the minimum flux density (in
+Jy/beam) to be considered in the Clean image for each loop of the
+self-calibration  process.  Note that this is the brightness of a
+pixel, not the flux of a Clean component.
+
+This variable length array can be resized using the  LET  /RESIZE
+command. For example
+    LET SELF__MINFLUX 0.001 0 0  /RESIZE
+will   lead   3   self-calibration   loops  (if  SELF__TIMES  and
+SELF__NITER are also of size 3)  selecting  on  regions  brighter
+than  1mJy/beam  in  the first one, and all regions in the last 2
+ones.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_REFANT}
+\index{20!SELF\_\_REFANT}
+\begin{verbatim}
+
+The reference antenna number. If 0, the program will peak the one
+with the shortest average baselines.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_FLUX}
+\index{20!SELF\_\_FLUX}
+\begin{verbatim}
+
+Maximum  value in the FLUX window. If 0, the FlUX window of Clean
+is not displayed
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_PRECISION}
+\index{20!SELF\_\_PRECISION}
+\begin{verbatim}
+
+Tolerance to test for self-calibration convergence.  The  default
+is  0.01. SELFCAL SUMMARY will write a message when no more self-
+cal iteration improves the solution (noise and dynamic range)  at
+this precision level.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_RESTORE}
+\index{20!SELF\_\_RESTORE}
+\begin{verbatim}
+
+Use UV__SELF /RESTORE after Cleaning. This avoids signal aliasing
+at image edges, and leads to a better estimate of the noise  lev-
+el.
+
+It also allows to use smaller images, in practice,
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_DISPLAY}
+\index{20!SELF\_\_DISPLAY}
+\begin{verbatim}
+
+If  YES,  display  Clean  image before each calibration loop, and
+prompt for user input. If YES, Cleaning at each step will use the
+number  of  iterations  specified  by  NITER, while if set to NO,
+Cleaning will stop at SELF__NITER, saving time.
+
+The dynamic range progress report is accurate only if  SELF__DIS-
+PLAY is set.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_FLAG}
+\index{20!SELF\_\_FLAG}
+\begin{verbatim}
+
+    If  SELF__FLAG  is  YES, SELFCAL will flag data with no solu-
+tion. If NO, it will keep the data as it was before.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_SNR}
+\index{20!SELF\_\_SNR}
+\begin{verbatim}
+
+Minimum Signal to Noise ratio on the antenna gain to  consider  a
+solution to be valid for an antenna. 6 is a good value, 3 a lower
+limit. Beware that this SNR makes sense only if the a priori  es-
+timate  of  the  noise  from  the  UV  weights  is  correct:  see
+SELF__SNOISE.
+
+\end{verbatim}
+\subsubsection{20 SELF\_\_SNOISE}
+\index{20!SELF\_\_SNOISE}
+\begin{verbatim}
+
+Noise scaling factor. This should be 1, but some noise  estimates
+need corrections. Continuum data from ALMA often requires sqrt(2)
+instead, for example.  Command UV__PREVIEW may help you  checking
+the noise scale.
+
+\end{verbatim}
+\subsubsection{20 CLEAN\_\_ARES}
+\index{20!CLEAN\_\_ARES}
+\begin{verbatim}
+
+    Maximum absolute residual to stop Cleaning
+
+\end{verbatim}
+\subsubsection{20 CLEAN\_\_FRES}
+\index{20!CLEAN\_\_FRES}
+\begin{verbatim}
+
+    Maximum fractional residual to stop Cleaning
+
+\end{verbatim}
+\subsubsection{20 CLEAN\_\_NITER}
+\index{20!CLEAN\_\_NITER}
+\begin{verbatim}
+
+Maximum  number  of  Clean  components.  If  all  of CLEAN__ARES,
+CLEAN__FRES and CLEAN__NITER are 0, Clean stops by  checking  the
+stability  of  the cleaned flux over CLEAN__NKEEP iterations. See
+HELP CLEAN for details.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{verbatim}
