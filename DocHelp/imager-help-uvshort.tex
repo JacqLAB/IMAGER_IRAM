@@ -1,0 +1,375 @@
+Compute  the  Short Spacings from the current Single Dish dataset
+(read by READ SINGLE) and merge it to the current UV data.
+  UV__SHORT takes sensible default guesses for  most  parameters.
+UV__SHORT  ?   lists the essential parameter values, UV__SHORT ??
+some additional ones, and UV__SHORT ??? even the  debugging  con-
+trol variables.
+    The  current values can be overriden by the user, who need to
+set  (and  if  needed  to   define   first)   the   corresponding
+SHORT__whatever   variable.   SHORT__SD__FACTOR   is the main one
+which may need to be specified by the user, as  the  Single  Dish
+data is rarely in the appropriate unit.
+  The resulting UV table becomes the current UV data, and can  be
+imaged, written, etc...
+\subsubsection{/REMOVE}
+\index{�!/REMOVE}
+\begin{verbatim}
+    UV__SHORT /REMOVE
+
+  Removes any short spacing from the current UV data set.
+
+\end{verbatim}
+\subsubsection{Algorithm}
+\index{�!Algorithm}
+\begin{verbatim}
+
+UV__SHORT task computes pseudo-visibilities  for  short  or  zero
+spacings from a single dish table of spectra (Class table) or LMV
+data cube.  These pseudo visibilities are  appended to  the  cur-
+rent (presumably a Mosaic) UV table.
+
+
+Short spacings are computed when the Interferometer dish diameter
+is smaller than the Single-dish diameter, Zero spacings otherwise
+(see HELP UV__SHORT Zero__Spacing for this case)
+
+For short spacings, the command performs two steps
+  (1) Creation of a "well behaved" map from the spectra.
+  (2) Extraction of UV visibilities from this map.
+
+See  HELP  UV__SHORT  Step__i  for  detailed  explanations of the
+method steps.
+
+With recent UV tables and Single Dish CLASS table,  most  parame-
+ters are automatically determined. The only parameter to be spec-
+ified remains SHORT__SD__FACTOR (although that one  may  also  be
+determined  automatically if the input single dish data set is in
+main-beam brightness temperature).
+
+A parameter set to 0  value  indicates  the  appropriate  default
+should be used.
+
+\end{verbatim}
+\subsubsection{Zero\_\_Spacing}
+\index{�!Zero\_\_Spacing}
+\begin{verbatim}
+
+      Zero spacings are computed when the single dish diameter is
+the same as the interferometer dish diameter.  Zero  spacing  ex-
+traction  proceeds differently for Class data tables and 3-D data
+cubes.
+
+In the data cube case, the nearest pixel matching  the  direction
+of  each  field  is  taken as the Zero spacing for this field. If
+there is no point close enough, according to the specified  posi-
+tion tolerance SHORT__TOLE, an error occurs.
+
+In  the  Class  data table case, all spectra within the specified
+position tolerance of a field center  are  averaged  together  to
+produce the Zero spacing. If none is found, an error occcurs.
+
+
+\end{verbatim}
+\subsubsection{Step\_\_1}
+\index{�!Step\_\_1}
+\begin{verbatim}
+
+      Step (1) Creation of a "well behaved" map from the spectra.
+
+Step  (1)  only occurs if the input single-dish data set (read by
+READ SINGLE) is a table of spectra.  The  table  format   is  de-
+scribed in  the CLASS_GRID command of CLASS.
+  The identification of the input single-dish data set as a table
+of spectra is currently only based on the specified  file  exten-
+sion: if that is .tab, it is assumed to be a table of spectra.
+
+It  is recommended that this input  table is a collection of sin-
+gle-dish, Nyquist sampled  spectra  covering  twice   the  inter-
+ferometric  field  of  view  of interest. However, UV__SHORT does
+*NOT* make any  assumption. It thus tries to compute  a "well be-
+haved"  map by linear operations  (convolutions) from the  origi-
+nal spectra, in an  optimum way  from signal  to noise  point  of
+view. The  map is extrapolated smoothly  towards zero at  the map
+edge in order  to  avoid   further   aliasing   in  the   Fourier
+transform   operations required in  Step (2).  This extrapolation
+has a scale  length of  twice the single-dish beam, in  order  to
+avoid spurious Fourier components.
+
+In detail, UV__SHORT performs the following operations:
+
+  - Resampling  (in space) of  the original  spectra on  a regular  grid by
+    convolution  with  a small  (typically  1/4  of  the single-dish  beam)
+    gaussian convolving kernel. In  this process, the weights of individual
+    spectra is carried on a weight map.
+  - Extrapolation by  zero outside  the convex hull  of the  mapped region.
+  - Convolution  of  the  result  by  a  gaussian  twice  as  wide  as  the
+    single-dish beam.   Within the  convex hull of  the mapped  region, the
+    smoothed map is replaced by the original map.
+
+\end{verbatim}
+\subsubsection{Step\_\_2}
+\index{�!Step\_\_2}
+\begin{verbatim}
+      Step (2) Extraction of UV visibilities from this map.
+
+From  the  given input data cube, or the "well behaved" data cube
+created by Step (1), UV__SHORT  computes the visibilities in  the
+following way:
+
+  - Fourier transform of the single dish map;
+  - Division by  the Fourier  transform of  the single dish  beam, up  to a
+    maximum spacing (SHORT__SD__DIAM, in meters);
+  - Inverse Fourier transform to the image plane and then for each pointing
+    center;
+  - Multiplication of the  image by the primary beam  of the interferometer
+    elements;
+  - Fourier transform back to the UV plane;
+  - Creation  of the  visibilities,  with  a given  weight  SHORT__SD__WEIGHT
+    and an appropriate calibration factor to Janskys SHORT__SD__FACTOR.
+
+Both  the   single-dish  and the  interferometer antennas are as-
+sumed    to   have   gaussian    beams    (SHORT__SD__BEAM    and
+SHORT__IP__BEAM, in radians).
+
+\end{verbatim}
+\subsubsection{Variables:}
+\index{�!Variables:}
+\begin{verbatim}
+
+  Control  variables for UV__SHORT are not predefined, except for
+the  3  main  ones:   SHORT__SD__FACTOR,  SHORT__SD__WEIGHT   and
+SHORT__UV__TRUNC.
+
+  All  others  should  be defined by the user in case the default
+value is not appropriate, with their appropriate (Real,  Char  or
+Logical) types.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_DO\_\_SINGLE}
+\index{�!SHORT\_\_DO\_\_SINGLE}
+\begin{verbatim}
+
+Logical value, should be YES except for test purposes.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_DO\_\_PRIMARY}
+\index{�!SHORT\_\_DO\_\_PRIMARY}
+\begin{verbatim}
+
+Logical value, should be YES except for test purposes.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_IP\_\_BEAM}
+\index{�!SHORT\_\_IP\_\_BEAM}
+\begin{verbatim}
+
+Half-power  beam  width of the interferometer antennas, in  radi-
+ans. The beam is assumed to be gaussian.
+
+  Default value is 0, meaning that the beam  is  taken  from  the
+Telescope section if present.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_IP\_\_DIAM}
+\index{�!SHORT\_\_IP\_\_DIAM}
+\begin{verbatim}
+
+Interferometer  diameter  for  which UV__SHORT will compute short
+spacing visibilities.
+
+  Default value is 0, meaning that the diameter is taken from the
+Telescope section if present.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_MCOL}
+\index{�!SHORT\_\_MCOL}
+\begin{verbatim}
+
+  *** Obsolescent ***
+
+See  READ SINGLE ClassTable.tab /RANGE  command for an equivalent
+method of selecting the appropriate channel range.
+
+The first and last column to be mapped. For  tables  produced  by
+GRID command of CLASS, SHORT__MCOL[1] should be 4 and SHORT__MCOL
+can be set to 0 to process all channels.
+
+  Default  value:  4  0,  appropriate  for  tables  coming   from
+CLASS_GRID command.
+
+
+\end{verbatim}
+\subsubsection{SHORT\_\_MIN\_\_WEIGHT}
+\index{�!SHORT\_\_MIN\_\_WEIGHT}
+\begin{verbatim}
+
+The  minimum  weights under which a given point in the map should
+be filled by the smooth map rather than by the gridded (original]
+map.
+
+  Default value: 0.01
+
+\end{verbatim}
+\subsubsection{SHORT\_\_MODE}
+\index{�!SHORT\_\_MODE}
+\begin{verbatim}
+
+This  is  an integer code used for backward compatibility with an
+older version of the UV__SHORT task, and also for test purpose.
+
+Allowed values are :
+
+-1  indicates to create a single UV table with columns for the Phase
+    center offsets only
+-2  indicates to create a UV table with columns for the Pointing
+    center offsets
+-3  indicates to create a UV table with the additional columns
+    type being Pointing or Phase, as in the original UV__TABLE$
++1  indicates to append to the initial UV table the short spacings
+    with Phase center offsets (which must thus match the initial UV
+    table shape)
++2  indicates to append to the initial UV table the short spacings
+    with Pointing center offsets (which must thus match the initial
+    UV table shape)
++3  indicates to append to the initial UV table the short spacings
+    (The extra column type being determined automatically).
+
+The default value is 3, i.e. automatic merging with  the  current
+UV table.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_SD\_\_BEAM}
+\index{�!SHORT\_\_SD\_\_BEAM}
+\begin{verbatim}
+
+Half-power  beam  width  of  the single dish antenna, in radians.
+The  beam is assumed to be gaussian.
+
+  Default value is 0, meaning that the beam  is  taken  from  the
+Telescope section if present.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_SD\_\_DIAM}
+\index{�!SHORT\_\_SD\_\_DIAM}
+\begin{verbatim}
+
+Single  dish  diameter  used to produce the input spectra, in me-
+ters.
+
+  Default value is 0, meaning that the diameter is taken from the
+Telescope section if present.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_SD\_\_FACTOR}
+\index{�!SHORT\_\_SD\_\_FACTOR}
+\begin{verbatim}
+
+Multiplicative calibration factor; it is used to convert from the
+single dish map units (e.g., main-beam brightness temperature) to
+janskys.
+
+A  default value of 0 can be used if the original data file is in
+unit of Tmb, the main beam  brightness  temperature,  because  in
+this  case  the  conversion  factor  can be derived from the beam
+size.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_SD\_\_WEIGHT}
+\index{�!SHORT\_\_SD\_\_WEIGHT}
+\begin{verbatim}
+
+Weight scaling factor for the generated visibilities.
+
+It is a relative scaling factor in the weights compared to a sup-
+posedly  optimal  weighting to give the best combined synthesized
+beam. That optimal weighting essentially gives  the  same  weight
+density par unit area in the UV plane than the shortest baselines
+measured with the interferometer only.  However, if  the  single-
+dish  data  has  not  been observed long enough, or has baselines
+problems for example, this weight may add noise  to  the  overall
+data set, so could be down-weighted.
+
+  Default: 1.0
+
+\end{verbatim}
+\subsubsection{SHORT\_\_TOLE}
+\index{�!SHORT\_\_TOLE}
+\begin{verbatim}
+
+The  tolerance in position (in radians). The behaviour differ for
+Short and Zero spacings and  Table or 3-D  cubes  as  Single-Dish
+data.
+
+If  the Single-Dish data is a table of spectra, Spectra differing
+by less than this amount will be added together  prior  to  grid-
+ding. A recommended value is below 1/10th of the Single Dish pri-
+mary beam. This is valid for Short Spacings and Zero Spacing cas-
+es.
+
+If the Single-Dish data is 3-D data cube, SHORT__TOLE is used on-
+ly for Zero Spacings. If no pixel is within SHORT__TOLE of an In-
+terferometer  pointing center, no short spacing is added for this
+field and an error occur.
+
+  Default value is 0, meaning using  1/16th of  the  Single  Dish
+primary beam.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_UV\_\_TRUNC}
+\index{�!SHORT\_\_UV\_\_TRUNC}
+\begin{verbatim}
+
+No  visibility at spacings higher than SHORT__UV__TRUNC is gener-
+ated. Theoretical consideration on the method used in  this  task
+implies that SHORT__UV__TRUNC should be at most (SHORT__SD__DIAM-
+SHORT__IP__DIAM).  Smaller values may need to be applied if,  for
+example,  the  pointing  accuracy  of the Single Dish is insuffi-
+cient.
+
+  Default  value  is   0,   meaning   to   use   SHORT__SD__DIAM-
+SHORT__IP__DIAM
+
+\end{verbatim}
+\subsubsection{SHORT\_\_WCOL}
+\index{�!SHORT\_\_WCOL}
+\begin{verbatim}
+
+
+For  tests  only:  The column of the spectra table containing the
+weights.
+
+  Default  value:  0=3,  appropriate  for  tables   coming   from
+CLASS_GRID command.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_WEIGHT\_\_MODE}
+\index{�!SHORT\_\_WEIGHT\_\_MODE}
+\begin{verbatim}
+
+The  weighting mode (NATURAL, UNIFORM or GRIDDED).  It is advised
+to use 'NA' for Natural weighting.
+
+
+\end{verbatim}
+\subsubsection{SHORT\_\_XCOL}
+\index{�!SHORT\_\_XCOL}
+\begin{verbatim}
+
+    For tests only: The column of the spectra table containing  X
+offsets.
+
+  Default   value:   0=1,  appropriate  for  tables  coming  from
+CLASS_GRID command.
+
+\end{verbatim}
+\subsubsection{SHORT\_\_YCOL}
+\index{�!SHORT\_\_YCOL}
+\begin{verbatim}
+
+    For tests only: The column of the spectra table containing  Y
+offsets.
+
+  Default   value:   0=2,  appropriate  for  tables  coming  from
+CLASS_GRID command.
+
+\end{verbatim}
