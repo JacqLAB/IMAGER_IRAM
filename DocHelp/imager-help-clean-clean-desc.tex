@@ -1,0 +1,333 @@
+\subsubsection{CLEAN\_\_ARES}
+\index{�!CLEAN\_\_ARES}
+\begin{verbatim}
+
+This  is  the minimal flux in the dirty map that the program will
+consider as significant.  Alternatively,  the  threshold  can  be
+specified as a fraction of the peak flux using CLEAN__FRES.  Once
+this level has been reached the program  stops  subtracting,  and
+starts the restoration phase.  The unit for this parameter is the
+map unit (typically Jy/Beam).  The parameter should usually be of
+the order of magnitude of the expected noise in the clean map.
+
+If  0,  CLEAN__FRES will be used instead. If all of CLEAN__NITER,
+CLEAN__ARES and CLEAN__FRES are 0, an absolute residual equal  to
+the noise level will be used for CLEAN__ARES.
+
+Short form is ARES.
+
+This  may  be overseded by the /ARES option which imposes a limit
+per plane through an array of values.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_FRES}
+\index{�!CLEAN\_\_FRES}
+\begin{verbatim}
+
+This is the minimal fraction of the peak flux in  the  dirty  map
+that the program will consider as significant.  Alternatively, an
+absolute threshold can be specified using CLEAN__ARES.  Once this
+level  has been reached the program stops subtracting, and starts
+the restoration phase.  This parameter is normalized to  1  (nei-
+ther  in % nor in db).  It should usually be of the order of mag-
+nitude of the inverse of the expected dynamic range of the inten-
+sity.
+
+If  0,  CLEAN__ARES will be used instead. If all of CLEAN__NITER,
+CLEAN__ARES and CLEAN__FRES are 0, an absolute residual equal  to
+the noise level will be used for CLEAN__ARES.
+
+Short form is FRES.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_GAIN}
+\index{�!CLEAN\_\_GAIN}
+\begin{verbatim}
+
+This is the gain of the subtraction loop.  It should typically be
+chosen in the range 0.05 and 0.3.  Higher values give faster con-
+vergence, while lower values give a better restitution of the ex-
+tended structure. A sensible default is 0.2.
+
+Short form is GAIN.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_NITER}
+\index{�!CLEAN\_\_NITER}
+\begin{verbatim}
+
+This is the maximum number of components the program will  accept
+to  subtract.   Once  it has been reached, the program starts the
+restoration phase.
+
+If 0, the program will guess a number, based on  the  image  size
+and  maximum  signal-to-noise ratio, and specified residual level
+CLEAN__ARES and/or CLEAN__FRES.
+
+Short form is NITER.
+
+This may be overseded by the /NITER option which imposes a  limit
+per plane through an array of values.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_NKEEP}
+\index{�!CLEAN\_\_NKEEP}
+\begin{verbatim}
+
+This  is an integer specifying the minimum number of Clean compo-
+nents before testing if Cleaning has converged.  The  convergence
+is  criterium  is  a  comparison of the cumulative flux evolution
+separated by CLEAN__NKEEP components. If th
+
+IF CLEAN__NKEEP is 0, CLEAN will ignore this convergence criteri-
+um,  and  continue  clean  until the CLEAN__NITER, CLEAN__ARES or
+CLEAN__FRES criteria indicate to stop.
+
+With CLEAN__NKEEP > 0, CLEAN will explore the  stability  of  the
+total  clean  flux  over the last CLEAN__NKEEP  iterations. For a
+positive (resp.  negative) source,  if  the  Clean  flux  becomes
+smaller  (resp.  larger)  than the Clean flux CLEAN__NKEEP itera-
+tions earlier, CLEAN will stop.
+
+Using CLEAN__NKEEP about 70 is a reasonable value.  Some  special
+cases  (faint  extended  sources)  may  require  larger values of
+CLEAN__NKEEP.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_POSITIVE}
+\index{�!CLEAN\_\_POSITIVE}
+\begin{verbatim}
+
+The minimum number of positive components  before  negative  ones
+are selected.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_RESTORE}
+\index{�!CLEAN\_\_RESTORE}
+\begin{verbatim}
+
+  Fraction  of  peak response of the primary beams coverage under
+which the Sky brightness image is blanked in a Mosaic  deconvolu-
+tion.
+
+The default is 0.2.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_SEARCH}
+\index{�!CLEAN\_\_SEARCH}
+\begin{verbatim}
+
+
+  Fraction  of peak response of the primary beams coverage beyond
+which no Clean component is searched in a Mosaic deconvolution.
+
+The default is 0.2.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_SIDELOBE}
+\index{�!CLEAN\_\_SIDELOBE}
+\begin{verbatim}
+
+Minimal relative intensity to consider for fitting the syntheized
+beam to obtain the Clean beam parameters (MAJOR, MINOR and ANGLE)
+when 0.  The default is 0.35.
+
+In case of poor UV coverage,  CLEAN__SIDELOBE  should  be  higher
+than  the  maximum sidelobe level to perform a good Gaussian fit.
+Some particularly bad UV coverage may not allow any good  fit  at
+all, however.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_NGOAL}
+\index{�!CLEAN\_\_NGOAL}
+\begin{verbatim}
+
+  Number of clean components to be selected in a Cycle in the AL-
+MA heterogeneous array cleaning method.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_NCYCLE}
+\index{�!CLEAN\_\_NCYCLE}
+\begin{verbatim}
+
+  Maximum number of Major Cycles for the SDI and CLARK methods.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_SMOOTH}
+\index{�!CLEAN\_\_SMOOTH}
+\begin{verbatim}
+
+  Smoothing factor between different scales in the MRC and MULTI-
+SCALE  methods.  The default is 2 or 4 for MRC depending on image
+size. It is sqrt(3) for MULTISCALE and may be set to larger  val-
+ues if needed.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_SPEEDY}
+\index{�!CLEAN\_\_SPEEDY}
+\begin{verbatim}
+
+  Speed-up factor for the CLARK major cycles. The default is 1.0.
+Larger values may be used, but at the expense of possible  insta-
+bilities of the algorithm.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_WORRY}
+\index{�!CLEAN\_\_WORRY}
+\begin{verbatim}
+
+  Worry factor in the MULTISCALE method for convergence. It prop-
+agates the S/N from one iteration to the other, so that  if  this
+S/N degrades, the method stops. Default is 0 (no propagation, and
+hence no test on S/N).  The value should be < 1.0 in all cases.
+
+\end{verbatim}
+\subsubsection{CLEAN\_\_INFLATE}
+\index{�!CLEAN\_\_INFLATE}
+\begin{verbatim}
+
+  Maximum Inflation factor for UV__RESTORE  (MULTISCALE  method).
+If  the  number of true (i.e. pixel based) Clean components found
+by MULTISCALE is larger than CLEAN__INFLATE times the  number  of
+compressed  (i.e.  those  with  the smoothing factor information)
+components, expansion of the compressed components  will  not  be
+possible, and UV__RESTORE will not be useable.
+
+  A default of 50 is in general adequate.  Better solutions might
+be found in the future, and this parameter suppressed. Apart from
+memory usage, this number has no consequence on the algorithm.
+
+\end{verbatim}
+\subsubsection{METHOD}
+\index{�!METHOD}
+\begin{verbatim}
+
+  Method used for the deconvolution. Can be HOGBOM, MULTI, MRC,
+  SDI or CLARK.
+
+
+\end{verbatim}
+\subsubsection{Old\_\_Names:}
+\index{�!Old\_\_Names:}
+\begin{verbatim}
+
+  Some  of the CLEAN parameters have kept their old names: MAJOR,
+MINOR, ANGLE (which are also used by command FIT)  BLC,  TRC  and
+BEAM__PATCH (which are seldom used)
+
+  Others have equivalent short names: ARES, FRES, GAIN, NITER for
+which the CLEAN__ prefix may be omitted.
+
+\end{verbatim}
+\subsubsection{BLC}
+\index{�!BLC}
+\begin{verbatim}
+
+These are the (pixel) coordinates of the Bottom  Left  Corner  of
+the  cleaning box.  The default (0,0) means the bottom left quar-
+ter (Nx/4,Ny/4).  If a SUPPORT is defined, BLC is ignored.
+
+\end{verbatim}
+\subsubsection{TRC}
+\index{�!TRC}
+\begin{verbatim}
+
+These are the (pixel) coordinates of the Top Right Corner of  the
+cleaning  box.   The  default  (0,0)  means the top right quarter
+(3*Nx/4,3*Ny/4).  If a SUPPORT is defined, TRC is ignored.
+
+\end{verbatim}
+\subsubsection{MAJOR}
+\index{�!MAJOR}
+\begin{verbatim}
+
+This is the major axis (FWHP) in user coordinates of the Gaussian
+restoring  beam.  If  0,  the  program will fit a Gaussian to the
+dirty beam. We strongly discourage to change the default value of
+0.
+
+\end{verbatim}
+\subsubsection{MINOR}
+\index{�!MINOR}
+\begin{verbatim}
+
+This is the minor axis (FWHP) in user coordinates of the Gaussian
+restoring beam. If 0, the program will  fit  a  Gaussian  to  the
+dirty beam. We strongly discourage to change the default value of
+0.
+
+\end{verbatim}
+\subsubsection{ANGLE}
+\index{�!ANGLE}
+\begin{verbatim}
+
+This is the position angle (from North towards East,  i.e.  anti-
+clockwise)  of  the major axis of the Gaussian restoring beam (in
+degrees).  If 0, the program will fit a  Gaussian  to  the  dirty
+beam. We strongly discourage to change the default value of 0.
+
+\end{verbatim}
+\subsubsection{BEAM\_\_PATCH}
+\index{�!BEAM\_\_PATCH}
+\begin{verbatim}
+
+The dirty beam patch to be used for the minor cycles in CLARK and
+MRC method.  It should be large enough to avoid  doing  too  many
+major  cycles,  but  has  practically no influence on the result.
+This size should be specified in pixel units.  Reasonable  values
+are  between  N/8 and N/4, where N is the number of map pixels in
+the same dimension.  If set to N,  the  CLARK  algorithm  becomes
+identical to the HOGBOM algorithm.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{verbatim}
